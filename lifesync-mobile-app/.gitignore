@@ -1,0 +1,25 @@
+# Node
+node_modules/
+
+# iOS
+ios/build/
+
+# Android
+android/build/
+android/app/build/
+android/.gradle/
+android/app/.cxx/
+
+# Environment variables
+# Ignore local environment overrides
+.env.local
+.env.*.local
+
+# Ignore other sensitive or machine-specific files
+*.keystore
+*.private
+*.swp
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

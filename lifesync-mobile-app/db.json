@@ -1,0 +1,109 @@
+{
+  "profileTemplates": {
+    "student": {
+      "id": "student",
+      "name": "Étudiant",
+      "iconName": "BookOpen",
+      "iconColor": "#FFFFFF",
+      "color": "#3B82F6",
+      "routines": [
+        { "id": "student-routine-1", "time": "07:00", "task": "Réveil et petit-déjeuner", "category": "personnel", "priority": "high", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "student-routine-2", "time": "08:30", "task": "Révision du cours d'aujourd'hui", "category": "études", "priority": "high", "aiOptimized": true, "completed": false, "streak": 0 },
+        { "id": "student-routine-3", "time": "12:00", "task": "Pause déjeuner", "category": "personnel", "priority": "medium", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "student-routine-4", "time": "14:00", "task": "Cours/TD", "category": "études", "priority": "high", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "student-routine-5", "time": "17:00", "task": "Exercices et devoirs", "category": "études", "priority": "high", "aiOptimized": true, "completed": false, "streak": 0 },
+        { "id": "student-routine-6", "time": "19:00", "task": "Sport/Détente", "category": "santé", "priority": "medium", "aiOptimized": true, "completed": false, "streak": 0 },
+        { "id": "student-routine-7", "time": "21:00", "task": "Préparation cours lendemain", "category": "études", "priority": "medium", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "student-routine-8", "time": "22:30", "task": "Lecture/Relaxation", "category": "personnel", "priority": "low", "aiOptimized": false, "completed": false, "streak": 0 }
+      ]
+    },
+    "professional": {
+      "id": "professional",
+      "name": "Professionnel",
+      "iconName": "Briefcase",
+      "iconColor": "#FFFFFF",
+      "color": "#374151",
+      "routines": [
+        { "id": "prof-routine-1", "time": "06:30", "task": "Réveil et routine matinale", "category": "personnel", "priority": "high", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "prof-routine-2", "time": "08:00", "task": "Trajet bureau/Check emails", "category": "travail", "priority": "high", "aiOptimized": true, "completed": false, "streak": 0 },
+        { "id": "prof-routine-3", "time": "09:00", "task": "Réunion équipe", "category": "travail", "priority": "high", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "prof-routine-4", "time": "12:30", "task": "Pause déjeuner", "category": "personnel", "priority": "medium", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "prof-routine-5", "time": "14:00", "task": "Travail sur projets", "category": "travail", "priority": "high", "aiOptimized": true, "completed": false, "streak": 0 },
+        { "id": "prof-routine-6", "time": "16:00", "task": "Réponse emails/Calls", "category": "travail", "priority": "medium", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "prof-routine-7", "time": "18:00", "task": "Fin journée/Bilan", "category": "travail", "priority": "medium", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "prof-routine-8", "time": "19:30", "task": "Temps famille/Personnel", "category": "personnel", "priority": "high", "aiOptimized": true, "completed": false, "streak": 0 }
+      ]
+    },
+    "parent": {
+      "id": "parent",
+      "name": "Parent",
+      "iconName": "Heart",
+      "iconColor": "#FFFFFF",
+      "color": "#EC4899",
+      "routines": [
+        { "id": "parent-routine-1", "time": "06:00", "task": "Réveil et préparation", "category": "personnel", "priority": "high", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "parent-routine-2", "time": "07:00", "task": "Réveil enfants/Petit-déj", "category": "famille", "priority": "high", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "parent-routine-3", "time": "08:00", "task": "École/Crèche", "category": "famille", "priority": "high", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "parent-routine-4", "time": "09:00", "task": "Travail/Tâches ménagères", "category": "travail", "priority": "medium", "aiOptimized": true, "completed": false, "streak": 0 },
+        { "id": "parent-routine-5", "time": "12:00", "task": "Courses/Préparation repas", "category": "famille", "priority": "medium", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "parent-routine-6", "time": "16:30", "task": "Récupération enfants", "category": "famille", "priority": "high", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "parent-routine-7", "time": "17:30", "task": "Activités enfants/Devoirs", "category": "famille", "priority": "high", "aiOptimized": true, "completed": false, "streak": 0 },
+        { "id": "parent-routine-8", "time": "19:00", "task": "Dîner famille", "category": "famille", "priority": "high", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "parent-routine-9", "time": "20:30", "task": "Coucher enfants", "category": "famille", "priority": "high", "aiOptimized": false, "completed": false, "streak": 0 }
+      ]
+    },
+    "fitness": {
+      "id": "fitness",
+      "name": "Fitness",
+      "iconName": "Zap",
+      "iconColor": "#FFFFFF",
+      "color": "#10B981",
+      "routines": [
+        { "id": "fitness-routine-1", "time": "06:00", "task": "Réveil et hydratation", "category": "santé", "priority": "high", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "fitness-routine-2", "time": "06:30", "task": "Entraînement matinal", "category": "santé", "priority": "high", "aiOptimized": true, "completed": false, "streak": 0 },
+        { "id": "fitness-routine-3", "time": "08:00", "task": "Petit-déjeuner protéiné", "category": "santé", "priority": "high", "aiOptimized": true, "completed": false, "streak": 0 },
+        { "id": "fitness-routine-4", "time": "10:00", "task": "Collation pré-workout", "category": "santé", "priority": "medium", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "fitness-routine-5", "time": "12:00", "task": "Déjeuner équilibré", "category": "santé", "priority": "medium", "aiOptimized": true, "completed": false, "streak": 0 },
+        { "id": "fitness-routine-6", "time": "15:00", "task": "Hydratation et étirements", "category": "santé", "priority": "medium", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "fitness-routine-7", "time": "18:00", "task": "Session cardio/musculation", "category": "santé", "priority": "high", "aiOptimized": true, "completed": false, "streak": 0 },
+        { "id": "fitness-routine-8", "time": "20:00", "task": "Dîner recovery", "category": "santé", "priority": "medium", "aiOptimized": false, "completed": false, "streak": 0 },
+        { "id": "fitness-routine-9", "time": "22:00", "task": "Préparation sommeil", "category": "santé", "priority": "medium", "aiOptimized": true, "completed": false, "streak": 0 }
+      ]
+    }
+  },
+  "appointments": [
+    { "id": "appt-1", "title": "Dentiste", "time": "14:30", "date": "Aujourd'hui", "with": "Dr. Martin", "type": "medical", "location": "Cabinet dentaire", "confirmed": true },
+    { "id": "appt-2", "title": "Réunion projet", "time": "10:00", "date": "Demain", "with": "Équipe Dev", "type": "work", "location": "Bureau", "confirmed": true },
+    { "id": "appt-3", "title": "Café avec Marie", "time": "16:00", "date": "Vendredi", "with": "Marie L.", "type": "social", "location": "Café Central", "confirmed": false },
+    { "id": "appt-4", "title": "Cours de yoga", "time": "18:30", "date": "Lundi", "with": "Studio Zen", "type": "health", "location": "Studio", "confirmed": true }
+  ],
+  "friends": [
+    { "id": "friend-1", "name": "Sarah M.", "avatar": "👩‍💼", "status": "online", "commonChallenges": 3, "profile": "professional" },
+    { "id": "friend-2", "name": "Alex K.", "avatar": "👨‍🎓", "status": "offline", "commonChallenges": 5, "profile": "student" },
+    { "id": "friend-3", "name": "Emma L.", "avatar": "👩‍🏫", "status": "online", "commonChallenges": 2, "profile": "parent" },
+    { "id": "friend-4", "name": "Tom R.", "avatar": "💪", "status": "busy", "commonChallenges": 4, "profile": "fitness" }
+  ],
+  "challenges": [
+    { "id": "chall-1", "title": "7 jours sans écran avant dormir", "participants": 12, "progress": 65, "reward": "Badge Sommeil", "daysLeft": 3, "joined": true },
+    { "id": "chall-2", "title": "Méditation quotidienne", "participants": 28, "progress": 80, "reward": "Badge Zen", "daysLeft": 7, "joined": true },
+    { "id": "chall-3", "title": "10k pas par jour", "participants": 45, "progress": 45, "reward": "Badge Marcheur", "daysLeft": 14, "joined": false },
+    { "id": "chall-4", "title": "Lecture 30min/jour", "participants": 19, "progress": 90, "reward": "Badge Lecteur", "daysLeft": 2, "joined": false }
+  ],
+  "communityTemplates": [
+    { "id": "comm-temp-1", "title": "Routine Étudiant en Médecine", "author": "Dr. Sophie", "downloads": 1250, "rating": 4.8, "profile": "student", "premium": false },
+    { "id": "comm-temp-2", "title": "Maman Entrepreneure", "author": "Lisa K.", "downloads": 890, "rating": 4.9, "profile": "parent", "premium": true },
+    { "id": "comm-temp-3", "title": "Freelance Productif", "author": "Max D.", "downloads": 2100, "rating": 4.7, "profile": "professional", "premium": false },
+    { "id": "comm-temp-4", "title": "Athlète Amateur", "author": "FitCoach", "downloads": 1680, "rating": 4.6, "profile": "fitness", "premium": true }
+  ],
+  "aiSuggestions": [
+    { "id": "ai-sugg-1", "type": "optimize", "title": "Optimiser votre routine matinale", "description": "Basé sur vos habitudes, commencer 15min plus tôt améliorerait votre productivité de 23%", "impact": "high" },
+    { "id": "ai-sugg-2", "type": "habit", "title": "Nouvelle habitude suggérée", "description": "Ajouter 5min de méditation après le déjeuner réduirait votre stress de 18%", "impact": "medium" },
+    { "id": "ai-sugg-3", "type": "social", "title": "Défi recommandé", "description": "Le défi 'Hydratation' correspond à vos objectifs santé. 89% de réussite dans votre profil", "impact": "medium" },
+    { "id": "ai-sugg-4", "type": "timing", "title": "Meilleur moment détecté", "description": "Vos exercices sont 40% plus efficaces entre 17h-19h selon vos données", "impact": "high" }
+  ],
+  "reminders": [
+    { "id": "student-routine-1", "time": "07:00", "task": "Réveil et petit-déjeuner", "category": "personnel", "priority": "high", "aiOptimized": false, "completed": true, "streak": 5, "profileId": "student" },
+    { "id": "student-routine-2", "time": "08:30", "task": "Révision du cours d'aujourd'hui", "category": "études", "priority": "high", "aiOptimized": true, "completed": false, "streak": 2, "profileId": "student" },
+    { "id": "prof-routine-1", "time": "06:30", "task": "Réveil et routine matinale", "category": "personnel", "priority": "high", "aiOptimized": false, "completed": true, "streak": 10, "profileId": "professional" }
+  ]
+}

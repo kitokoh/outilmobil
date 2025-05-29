@@ -1,0 +1,146 @@
+import React from 'react';
+import { View, Text, TouchableOpacity } from 'react-native'; // StyleSheet removed, styles passed as prop
+import { Star, Trophy, Users as UsersIcon, Brain, Sparkles, Calendar, Clock, Phone, Video, CheckCircle, Circle } from 'lucide-react-native';
+import useStore from '../store'; // Adjusted path
+
+const Dashboard = ({ styles }) => { // Removed props now coming from store
+  const reminders = useStore((state) => state.reminders);
+  const appointments = useStore((state) => state.appointments);
+  const friends = useStore((state) => state.friends);
+  const challenges = useStore((state) => state.challenges);
+  const aiSuggestions = useStore((state) => state.aiSuggestions);
+  const streak = useStore((state) => state.streak);
+  const setCurrentView = useStore((state) => state.setCurrentView);
+  const toggleReminderCompleted = useStore((state) => state.toggleReminderCompleted);
+
+  return (
+    <View style={styles.dashboardContainer}>
+      <View style={styles.headerCard}>
+        <View style={styles.headerCardBackgroundCircle} />
+        <View style={styles.headerRelative}>
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.headerGreeting}>Bonjour ! 👋</Text>
+              <Text style={styles.headerTaskInfo}>Vous avez {reminders.filter(r => !r.completed).length} tâches aujourd'hui</Text>
+            </View>
+            <View style={styles.headerStreakContainer}>
+              <View style={styles.headerStreak}>
+                <Star size={20} color="white" />
+                <Text style={styles.headerStreakText}>{streak}</Text>
+              </View>
+              <Text style={styles.headerStreakSubText}>jours de suite</Text>
+            </View>
+          </View>
+          <View style={styles.headerStatsRow}>
+            <View style={styles.headerStatItem}>
+              <Trophy size={16} color="white" />
+              {/* This was hardcoded, should ideally come from challenges state */}
+              <Text style={styles.headerStatText}>{challenges.filter(c => c.joined).length} défis actifs</Text>
+            </View>
+            <View style={styles.headerStatItem}>
+              <UsersIcon size={16} color="white" />
+              <Text style={styles.headerStatText}>{friends.length} amis</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.aiSuggestionCard}>
+        <View style={styles.aiSuggestionHeader}>
+          <Brain size={20} color="#F97316" />
+          <Text style={styles.aiSuggestionTitle}>IA Coach Personnel</Text>
+        </View>
+        {aiSuggestions.slice(0, 1).map((suggestion) => (
+          <View key={suggestion.id} style={styles.aiSuggestionContent}>
+            <View style={{flexShrink: 1}}>
+              <Text style={styles.aiSuggestionText}>{suggestion.title}</Text>
+              <Text style={styles.aiSuggestionDescription}>{suggestion.description}</Text>
+            </View>
+            <TouchableOpacity style={styles.aiSuggestionButton}>
+              <Text style={styles.aiSuggestionButtonText}>Appliquer</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.quickNavGrid}>
+        <TouchableOpacity onPress={() => setCurrentView('appointments')} style={styles.quickNavItem}>
+          <Calendar size={24} color="#3B82F6" style={styles.quickNavIcon} />
+          <Text style={styles.quickNavText}>RDV</Text>
+          <Text style={styles.quickNavCount}>{appointments.length}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setCurrentView('challenges')} style={styles.quickNavItem}>
+          <Trophy size={24} color="#F59E0B" style={styles.quickNavIcon} />
+          <Text style={styles.quickNavText}>Défis</Text>
+          <Text style={styles.quickNavCount}>{challenges.filter(c => c.joined).length}/{challenges.length}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setCurrentView('community')} style={styles.quickNavItem}>
+          <UsersIcon size={24} color="#10B981" style={styles.quickNavIcon} />
+          <Text style={styles.quickNavText}>Communauté</Text>
+          <Text style={styles.quickNavCount}>{friends.length}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setCurrentView('ai')} style={styles.quickNavItem}>
+          <Sparkles size={24} color="#8B5CF6" style={styles.quickNavIcon} />
+          <Text style={styles.quickNavText}>IA</Text>
+          <Text style={styles.quickNavCount}>{aiSuggestions.length}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.card}>
+        <View style={styles.cardHeaderIconWrapper}><Clock size={20} color="#6366F1" /><Text style={styles.cardTitle}> Prochaines tâches</Text></View>
+        <View style={styles.taskList}>
+          {reminders.slice(0, 4).map((reminder) => (
+            <View key={reminder.id} style={styles.taskItem}>
+              <TouchableOpacity onPress={() => toggleReminderCompleted(reminder.id)}>
+                {reminder.completed ?
+                  <CheckCircle size={20} color="#10B981" /> :
+                  <Circle size={20} color="#9CA3AF" />
+                }
+              </TouchableOpacity>
+              <View style={styles.taskDetails}>
+                <View style={styles.taskMeta}>
+                  <Text style={styles.taskTime}>{reminder.time}</Text>
+                  <Text style={[styles.badge, styles.categoryBadge]}>{reminder.category}</Text>
+                  {reminder.aiOptimized && (
+                    <View style={[styles.badge, styles.aiBadge]}>
+                      <Sparkles size={12} color="#8B5CF6" />
+                      <Text style={styles.aiBadgeText}>IA</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={reminder.completed ? styles.taskTextCompleted : styles.taskText}>
+                  {reminder.task}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {appointments.length > 0 && (
+        <View style={styles.card}>
+          <View style={styles.cardHeaderIconWrapper}><Calendar size={20} color="#10B981" /><Text style={styles.cardTitle}> Prochain rendez-vous</Text></View>
+          <View style={styles.appointmentItem}>
+            <View style={styles.appointmentTimeBlock}>
+              <Text style={styles.appointmentTimeText}>{appointments[0].time.split(':')[0]}</Text>
+            </View>
+            <View style={styles.appointmentDetails}>
+              <Text style={styles.appointmentTitleText}>{appointments[0].title}</Text>
+              <Text style={styles.appointmentSubText}>avec {appointments[0].with}</Text>
+              <Text style={styles.appointmentMetaText}>{appointments[0].date} à {appointments[0].time}</Text>
+            </View>
+            <View style={styles.appointmentActions}>
+              <TouchableOpacity style={[styles.actionButton, {backgroundColor: '#10B981'}]}>
+                <Phone size={16} color="white" />
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.actionButton, {backgroundColor: '#3B82F6'}]}>
+                <Video size={16} color="white" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+export default Dashboard;
