@@ -25,7 +25,21 @@ exports.registerUser = functions.https.onRequest((req, res) => {
         email: email,
         password: password,
       });
-      return res.status(201).send({ uid: userRecord.uid, email: userRecord.email });
+
+      // Create a user profile document in Firestore
+      const db = admin.firestore();
+      const userProfile = {
+        uid: userRecord.uid,
+        email: userRecord.email,
+        name: req.body.name || userRecord.email, // Use name from request body or default to email
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        // Initialize other profile fields as needed
+        bio: '',
+        avatarUrl: '',
+      };
+      await db.collection('users').doc(userRecord.uid).set(userProfile);
+
+      return res.status(201).send({ uid: userRecord.uid, email: userRecord.email, name: userProfile.name });
     } catch (error) {
       console.error('Error creating new user:', error);
       // Provide more specific error messages if possible
@@ -38,6 +52,104 @@ exports.registerUser = functions.https.onRequest((req, res) => {
         errorMessage = 'The password is not strong enough.';
       }
       return res.status(500).send({ error: errorMessage });
+    }
+  });
+});
+
+/**
+ * Retrieves the profile of the authenticated user.
+ * Requires authentication.
+ */
+exports.getUserProfile = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    if (req.method !== 'GET') {
+      return res.status(405).send('Method Not Allowed');
+    }
+
+    const idToken = req.headers.authorization?.split('Bearer ')[1];
+    if (!idToken) {
+      return res.status(403).send('Unauthorized: No token provided.');
+    }
+
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (error) {
+      console.error('Error verifying ID token:', error);
+      return res.status(403).send('Unauthorized: Invalid token.');
+    }
+    const userId = decodedToken.uid;
+
+    try {
+      const db = admin.firestore();
+      const userProfileRef = db.collection('users').doc(userId);
+      const doc = await userProfileRef.get();
+
+      if (!doc.exists) {
+        // Optionally, return a default profile structure or a specific "not found" message
+        return res.status(404).send({ error: 'User profile not found.' });
+      }
+
+      return res.status(200).send(doc.data());
+    } catch (error) {
+      console.error('Error getting user profile:', error);
+      return res.status(500).send({ error: 'Error getting user profile.' });
+    }
+  });
+});
+
+/**
+ * Updates the profile of the authenticated user.
+ * Requires authentication.
+ * Accepts profile data (e.g., name, bio, avatarUrl) in the request body.
+ */
+exports.updateUserProfile = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    if (req.method !== 'PATCH' && req.method !== 'PUT') { // Typically PATCH for partial updates
+      return res.status(405).send('Method Not Allowed');
+    }
+
+    const idToken = req.headers.authorization?.split('Bearer ')[1];
+    if (!idToken) {
+      return res.status(403).send('Unauthorized: No token provided.');
+    }
+
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (error) {
+      console.error('Error verifying ID token:', error);
+      return res.status(403).send('Unauthorized: Invalid token.');
+    }
+    const userId = decodedToken.uid;
+    const dataToUpdate = req.body;
+
+    if (Object.keys(dataToUpdate).length === 0) {
+      return res.status(400).send({ error: 'No data provided for update.' });
+    }
+
+    // Basic validation example: ensure name is a string if provided
+    if (dataToUpdate.name && typeof dataToUpdate.name !== 'string') {
+      return res.status(400).send({ error: 'Invalid name format. Name must be a string.' });
+    }
+    // Add more validation as needed for other fields (bio, avatarUrl, etc.)
+
+    // Prevent updating immutable fields like UID or email from this endpoint
+    delete dataToUpdate.uid;
+    delete dataToUpdate.email;
+    delete dataToUpdate.createdAt; // Should not be updated by user
+
+    try {
+      const db = admin.firestore();
+      const userProfileRef = db.collection('users').doc(userId);
+
+      await userProfileRef.set(dataToUpdate, { merge: true }); // Use merge: true to update existing fields or create if not present
+
+      const updatedDoc = await userProfileRef.get();
+      return res.status(200).send(updatedDoc.data());
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      return res.status(500).send({ error: 'Error updating user profile.' });
     }
   });
 });

@@ -40,6 +40,7 @@ import AiView from './components/AiView';
 import AllReminders from './components/AllReminders';
 import ProfileSelector from './components/ProfileSelector';
 import LoginScreen from './components/LoginScreen'; // Import LoginScreen
+import SettingsScreen from './components/SettingsScreen';
 
 // Import Zustand store
 import useStore from './store';
@@ -138,6 +139,7 @@ const LifeSyncApp = () => {
           {currentView === 'community' && <CommunityView styles={styles} />}
           {currentView === 'ai' && <AiView styles={styles} />}
           {currentView === 'profile' && <ProfileSelector styles={styles} />}
+          {currentView === 'settings' && <SettingsScreen styles={styles} />}
         </View>
       </ScrollView>
       <View style={styles.bottomNavContainer}>
@@ -158,7 +160,7 @@ const LifeSyncApp = () => {
             <Brain size={22} color={currentView === 'ai' ? styles.textIndigo600.color : styles.textSlate400.color} />
             <Text style={[styles.bottomNavText, currentView === 'ai' ? styles.textIndigo600 : styles.textSlate400]}>IA Coach</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.bottomNavItem} onPress={() => { setCurrentView('settings') /* Placeholder */ }}>
+          <TouchableOpacity style={styles.bottomNavItem} onPress={() => setCurrentView('settings')}>
             <Settings size={22} color={currentView === 'settings' ? styles.textIndigo600.color : styles.textSlate400.color} />
             <Text style={[styles.bottomNavText, currentView === 'settings' ? styles.textIndigo600 : styles.textSlate400]}>Plus</Text>
           </TouchableOpacity>

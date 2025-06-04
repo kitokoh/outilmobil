@@ -43,8 +43,9 @@ const categories = {
 const useStore = create((set, get) => ({
   // --- State variables ---
   // Firebase managed auth state
-  isAuthenticated: false, 
-  user: null, // Will store { email, name, id, displayName } from Firebase
+  isAuthenticated: false,
+  user: null, // Firebase auth user object { email, name (displayName), id (uid) } - primarily Firebase Auth info
+  detailedUserProfile: null, // Will store { name, email, bio, avatarUrl, uid, createdAt } from Firestore
 
   // Original app state variables
   currentView: 'dashboard',
@@ -72,8 +73,11 @@ const useStore = create((set, get) => ({
         // Example: await axios.post(`${API_BASE_URL}/users`, { uid: firebaseUser.uid, email: firebaseUser.email, name: name });
         set({
           isAuthenticated: true,
-          user: { email: firebaseUser.email, name: firebaseUser.displayName, id: firebaseUser.uid }
+          // user object from firebaseUser will be set by checkAuthState listener or login
+          // No need to set user here directly if checkAuthState handles it comprehensively
         });
+        // Call initializeProfileData which will fetch the detailed profile
+        // The backend registerUser function is already creating the Firestore profile.
         await get().initializeProfileData();
         return true;
       }
@@ -93,7 +97,7 @@ const useStore = create((set, get) => ({
           isAuthenticated: true,
           user: { email: firebaseUser.email, name: firebaseUser.displayName || 'User', id: firebaseUser.uid }
         });
-        await get().initializeProfileData();
+        await get().initializeProfileData(); // This will call fetchDetailedUserProfile
         return true;
       }
       return false;
@@ -109,6 +113,7 @@ const useStore = create((set, get) => ({
       set({ 
         isAuthenticated: false,
         user: null,
+        detailedUserProfile: null, // Clear detailed profile on logout
         // currentView: 'login', // Decide if view should change, or rely on app logic
         // Clear user-specific data, keep general data if any
         reminders: [],
@@ -197,6 +202,11 @@ const useStore = create((set, get) => ({
         acc[cat.iconName || key] = cat.icon; // Assuming category might have iconName or key maps to icon component
         return acc;
       }, {});
+
+    // Fetch detailed user profile first if authenticated
+    if (isAuthenticated && user) {
+      await get().fetchDetailedUserProfile();
+    }
 
 
     // Always fetch profileTemplates as they might be needed for login screen or public parts.
@@ -304,6 +314,79 @@ const useStore = create((set, get) => ({
   },
 
   setActiveTab: (tab) => set({ activeTab: tab }),
+
+  // --- User Profile Actions ---
+  fetchDetailedUserProfile: async () => {
+    const { user } = get();
+    if (!user || !user.id) { // Check user.id as uid is stored there
+      console.log("fetchDetailedUserProfile: User not available or user ID missing.");
+      return set({ detailedUserProfile: null });
+    }
+    try {
+      const firebaseCurrentUser = firebase.auth().currentUser;
+      if (!firebaseCurrentUser) {
+        console.log("fetchDetailedUserProfile: Firebase currentUser not available.");
+        return set({ detailedUserProfile: null });
+      }
+      const idToken = await firebaseCurrentUser.getIdToken();
+      const response = await axios.get(`${API_BASE_URL}/getUserProfile`, { headers: { Authorization: `Bearer ${idToken}` } });
+      if (response.data) {
+        set({ detailedUserProfile: response.data });
+        // Optionally update Firebase Auth displayName if Firestore name is canonical and different
+        if (response.data.name && firebaseCurrentUser.displayName !== response.data.name) {
+          // await firebaseCurrentUser.updateProfile({ displayName: response.data.name });
+          // set(state => ({ user: { ...state.user, name: response.data.name } }));
+          // This part is commented out to avoid potential loops or if backend is source of truth for display name
+        }
+      } else {
+        set({ detailedUserProfile: null });
+      }
+    } catch (error) {
+      console.error("Error fetching detailed user profile:", error.response ? error.response.data : error.message);
+      if (error.response && error.response.status === 404) {
+         console.log("User profile not found in Firestore, setting detailedUserProfile to a default structure or null.");
+        // Optionally set a default structure if user document doesn't exist
+        // For now, setting to null as per current logic
+      }
+      set({ detailedUserProfile: null });
+    }
+  },
+
+  updateUserProfile: async (profileData) => {
+    const { user } = get();
+    if (!user || !user.id) {
+      console.error("User not authenticated or user ID missing for updateUserProfile");
+      throw new Error("User not authenticated");
+    }
+    try {
+      const firebaseCurrentUser = firebase.auth().currentUser;
+       if (!firebaseCurrentUser) {
+        console.error("Firebase currentUser not available for updateUserProfile");
+        throw new Error("User session error");
+      }
+      const idToken = await firebaseCurrentUser.getIdToken();
+      const response = await axios.patch(`${API_BASE_URL}/updateUserProfile`, profileData, { headers: { Authorization: `Bearer ${idToken}` } });
+
+      if (response.data) {
+        set({ detailedUserProfile: response.data });
+        // If name was updated, also update Firebase Auth displayName for consistency
+        if (profileData.name && firebaseCurrentUser.displayName !== profileData.name) {
+          await firebaseCurrentUser.updateProfile({ displayName: profileData.name });
+          // Update the 'user' state in Zustand to reflect this change immediately
+          set(state => ({
+            user: { ...state.user, name: profileData.name, displayName: profileData.name }
+          }));
+        }
+        return response.data; // Return updated profile
+      } else {
+        throw new Error("No data returned from server on profile update.");
+      }
+    } catch (error) {
+      console.error("Error updating user profile:", error.response ? error.response.data : error.message);
+      throw error; // Re-throw to be caught by UI
+    }
+  },
+
   // --- Reminder Actions ---
   addReminderStore: async (reminderData) => { // Renamed to avoid conflict if an old addReminder exists
     const { user } = get();
