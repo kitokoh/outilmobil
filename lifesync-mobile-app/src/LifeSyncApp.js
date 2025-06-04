@@ -1,6 +1,35 @@
-import React, { useEffect } from 'react';
-import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Button } from 'react-native';
 import { Bell, User, Calendar, Home, Plus, Settings, Users as UsersIcon, Brain, LogOut } from 'lucide-react-native'; // Added LogOut icon
+
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
+import 'firebase/compat/firestore'; // If using Firestore directly on client
+import {
+  REACT_APP_FIREBASE_API_KEY,
+  REACT_APP_FIREBASE_AUTH_DOMAIN,
+  REACT_APP_FIREBASE_PROJECT_ID,
+  REACT_APP_FIREBASE_STORAGE_BUCKET,
+  REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  REACT_APP_FIREBASE_APP_ID
+} from '@env';
+
+const firebaseConfig = {
+  apiKey: REACT_APP_FIREBASE_API_KEY,
+  authDomain: REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: REACT_APP_FIREBASE_APP_ID,
+};
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+  console.log("Firebase initialized successfully!");
+} else {
+  firebase.app(); // if already initialized, use that one
+  console.log("Firebase already initialized.");
+}
 
 // Import components
 import Dashboard from './components/Dashboard';
@@ -14,29 +43,64 @@ import LoginScreen from './components/LoginScreen'; // Import LoginScreen
 
 // Import Zustand store
 import useStore from './store';
+import RegistrationScreen from './components/RegistrationScreen';
 
 const LifeSyncApp = () => {
-  // Get state and actions from Zustand store
-  const isAuthenticated = useStore((state) => state.isAuthenticated);
-  const login = useStore((state) => state.login); // Though login is called from LoginScreen, keep for reference or future use
-  const logout = useStore((state) => state.logout);
-  const currentView = useStore((state) => state.currentView);
-  const notifications = useStore((state) => state.notifications);
-  const setCurrentView = useStore((state) => state.setCurrentView);
-  const initializeProfileData = useStore((state) => state.initializeProfileData);
-  const userProfile = useStore((state) => state.userProfile);
+  const { isAuthenticated, checkAuthState, user, currentView, setCurrentView } = useStore();
+  const [isLoading, setIsLoading] = useState(true);
+  const [authFlowView, setAuthFlowView] = useState('login'); // 'login' or 'register'
 
   useEffect(() => {
-    // Initialize data when isAuthenticated or userProfile changes.
-    // The store's initializeProfileData action already checks for isAuthenticated internally.
-    // It also fetches public profileTemplates if not authenticated.
-    initializeProfileData();
-  }, [isAuthenticated, userProfile, initializeProfileData]);
+    const unsubscribe = checkAuthState(); // checkAuthState from store handles initialization
 
+    // Simulate loading, or use a more robust way to determine when auth state is known
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000); // Adjust timeout or use a flag from checkAuthState if it provides one
+
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+      clearTimeout(timer);
+    };
+  }, [checkAuthState]); // checkAuthState is stable, so this runs once on mount
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f0f4f8' }}>
+        <ActivityIndicator size="large" color="#4F46E5" />
+        <Text style={{ marginTop: 10, fontSize: 16, color: '#333' }}>Loading LifeSync...</Text>
+      </View>
+    );
+  }
 
   if (!isAuthenticated) {
-    return <LoginScreen styles={styles} />; // Pass global styles to LoginScreen
+    // Conceptual navigation for auth flow
+    // In a real app, this would be handled by React Navigation (e.g., a StackNavigator)
+    const mockNavigation = {
+        navigate: (screenName) => {
+            if (screenName === 'Registration') setAuthFlowView('register');
+            else if (screenName === 'Login') setAuthFlowView('login');
+            // In a real app, this would also handle navigation to main app stack upon login/register success
+        },
+        goBack: () => setAuthFlowView('login'), // Simple goBack for registration screen
+    };
+    if (authFlowView === 'login') {
+      return <LoginScreen navigation={mockNavigation} />;
+    }
+    if (authFlowView === 'register') {
+      return <RegistrationScreen navigation={mockNavigation} />;
+    }
+    // Fallback to LoginScreen if authFlowView is somehow invalid
+    return <LoginScreen navigation={mockNavigation} />;
   }
+
+  // --- Authenticated App View ---
+  // This part is the original authenticated view structure from LifeSyncApp.js
+  // (Copied from a representative version of the original file structure for brevity in this example)
+  // Ensure all necessary imports (Bell, User, Calendar, etc., and components) are at the top of the file.
+  const { logout, notifications } = useStore.getState(); // Direct call for simplicity in example
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -94,15 +158,17 @@ const LifeSyncApp = () => {
             <Brain size={22} color={currentView === 'ai' ? styles.textIndigo600.color : styles.textSlate400.color} />
             <Text style={[styles.bottomNavText, currentView === 'ai' ? styles.textIndigo600 : styles.textSlate400]}>IA Coach</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.bottomNavItem} onPress={() => { /* Define action for Plus/Settings */ }}>
-            <Settings size={22} color={styles.textSlate400.color} />
-            <Text style={[styles.bottomNavText, styles.textSlate400]}>Plus</Text>
+          <TouchableOpacity style={styles.bottomNavItem} onPress={() => { setCurrentView('settings') /* Placeholder */ }}>
+            <Settings size={22} color={currentView === 'settings' ? styles.textIndigo600.color : styles.textSlate400.color} />
+            <Text style={[styles.bottomNavText, currentView === 'settings' ? styles.textIndigo600 : styles.textSlate400]}>Plus</Text>
           </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
   );
 };
+
+export default LifeSyncApp;
 
 const textSizes = {
   xs: 12,
@@ -551,4 +617,3 @@ const styles = StyleSheet.create({
   profileRoutinesMore: { fontSize: textSizes.xs, color: colors.slate500, marginTop:4 },
 });
 
-export default LifeSyncApp;

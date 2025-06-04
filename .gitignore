@@ -1,0 +1,2 @@
+# Ignore Node.js dependencies
+backend/functions/node_modules/
