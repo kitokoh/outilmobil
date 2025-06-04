@@ -23,3 +23,8 @@ android/app/.cxx/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Web build output
+dist/
+web-build/
+build/

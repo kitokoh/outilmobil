@@ -1,26 +1,26 @@
 import { create } from 'zustand';
 import axios from 'axios';
 import { BookOpen, Briefcase, Heart, Zap, User } from 'lucide-react-native';
-import { API_BASE_URL } from '@env'; // Import API_BASE_URL from react-native-dotenv
+import { API_BASE_URL } from '@env'; // API_BASE_URL should be configured to point to Firebase Cloud Functions
 
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 // import 'firebase/compat/firestore'; // Uncomment if you use Firestore directly from client
 
-// IMPORTANT: Initialize Firebase with your project config
-// const firebaseConfig = {
-//   apiKey: "YOUR_API_KEY",
-//   authDomain: "YOUR_AUTH_DOMAIN",
-//   projectId: "YOUR_PROJECT_ID",
-//   storageBucket: "YOUR_STORAGE_BUCKET",
-//   messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-//   appId: "YOUR_APP_ID"
-// };
-// if (!firebase.apps.length) {
-//   firebase.initializeApp(firebaseConfig);
-// } else {
-//   firebase.app(); // if already initialized, use that one
-// }
+// IMPORTANT: Initialize Firebase with your project config. This is the central Firebase initialization for the app.
+const firebaseConfig = {
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID
+};
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+} else {
+  firebase.app(); // if already initialized, use that one
+}
 
 // Helper to map icon names to components
 const iconMap = {
@@ -245,16 +245,22 @@ const useStore = create((set, get) => ({
           });
         }
       } catch (publicError) {
-        console.error("Failed to fetch public data:", publicError);
-        // Decide if we should clear them or keep stale if error
+        console.error("Failed to fetch one or more public data endpoints (challenges, community templates, AI suggestions):", publicError.message);
+        // Decide if we should clear them or keep stale if error. Clearing for now.
          set({ challenges: [], communityTemplates: [], aiSuggestions: [] });
       }
       return;
     }
 
-    // User is authenticated, fetch all data
+    // User is authenticated, fetch all user-specific and public data
     try {
-      const idToken = await firebase.auth().currentUser.getIdToken();
+      const firebaseCurrentUser = firebase.auth().currentUser;
+      if (!firebaseCurrentUser) {
+        console.error("initializeProfileData: Firebase currentUser not available for authenticated fetch.");
+        // Potentially clear all user data here as well or trigger logout
+        return;
+      }
+      const idToken = await firebaseCurrentUser.getIdToken();
       const headers = { Authorization: `Bearer ${idToken}` };
       const db = firebase.firestore(); // For client-side Firestore calls if any remain
 
@@ -302,7 +308,7 @@ const useStore = create((set, get) => ({
       });
 
     } catch (error) {
-      console.error("Failed to fetch data for authenticated user:", error);
+      console.error("Failed to fetch data for authenticated user:", error.message, error.response ? error.response.data : '');
       set({ 
         reminders: [], appointments: [], friends: [],
         challenges: get().challenges.map(c => ({...c, joined: false, progress: 0})) || [], // Reset user specific parts
@@ -318,35 +324,39 @@ const useStore = create((set, get) => ({
   // --- User Profile Actions ---
   fetchDetailedUserProfile: async () => {
     const { user } = get();
-    if (!user || !user.id) { // Check user.id as uid is stored there
-      console.log("fetchDetailedUserProfile: User not available or user ID missing.");
+    if (!user || !user.id) {
+      // console.log("fetchDetailedUserProfile: User not available or user ID missing."); // Already logged by caller or auth state
       return set({ detailedUserProfile: null });
     }
+
+    const firebaseCurrentUser = firebase.auth().currentUser;
+    if (!firebaseCurrentUser) {
+      console.error("fetchDetailedUserProfile: Firebase currentUser not available even though user object exists in state.");
+      // This case might indicate an inconsistent state, potentially clear user or trigger logout
+      return set({ detailedUserProfile: null, isAuthenticated: false, user: null });
+    }
+
     try {
-      const firebaseCurrentUser = firebase.auth().currentUser;
-      if (!firebaseCurrentUser) {
-        console.log("fetchDetailedUserProfile: Firebase currentUser not available.");
-        return set({ detailedUserProfile: null });
-      }
       const idToken = await firebaseCurrentUser.getIdToken();
       const response = await axios.get(`${API_BASE_URL}/getUserProfile`, { headers: { Authorization: `Bearer ${idToken}` } });
+
       if (response.data) {
         set({ detailedUserProfile: response.data });
         // Optionally update Firebase Auth displayName if Firestore name is canonical and different
-        if (response.data.name && firebaseCurrentUser.displayName !== response.data.name) {
-          // await firebaseCurrentUser.updateProfile({ displayName: response.data.name });
-          // set(state => ({ user: { ...state.user, name: response.data.name } }));
-          // This part is commented out to avoid potential loops or if backend is source of truth for display name
-        }
+        // This is commented out as per original logic to avoid potential loops.
+        // if (response.data.name && firebaseCurrentUser.displayName !== response.data.name) {
+        //   await firebaseCurrentUser.updateProfile({ displayName: response.data.name });
+        //   set(state => ({ user: { ...state.user, name: response.data.name } }));
+        // }
       } else {
+        // This case might not be hit if server returns 404 for not found, which is caught by catch block.
+        // If server returns 200 with empty data, this will set profile to null.
         set({ detailedUserProfile: null });
       }
     } catch (error) {
-      console.error("Error fetching detailed user profile:", error.response ? error.response.data : error.message);
+      console.error("Error fetching detailed user profile:", error.message, error.response ? error.response.data : '');
       if (error.response && error.response.status === 404) {
-         console.log("User profile not found in Firestore, setting detailedUserProfile to a default structure or null.");
-        // Optionally set a default structure if user document doesn't exist
-        // For now, setting to null as per current logic
+         console.log("Detailed user profile not found (404). Setting detailedUserProfile to null.");
       }
       set({ detailedUserProfile: null });
     }
@@ -355,15 +365,17 @@ const useStore = create((set, get) => ({
   updateUserProfile: async (profileData) => {
     const { user } = get();
     if (!user || !user.id) {
-      console.error("User not authenticated or user ID missing for updateUserProfile");
-      throw new Error("User not authenticated");
+      console.error("User not authenticated or user ID missing for updateUserProfile.");
+      throw new Error("User not authenticated. Cannot update profile.");
     }
+
+    const firebaseCurrentUser = firebase.auth().currentUser;
+    if (!firebaseCurrentUser) {
+      console.error("Firebase currentUser not available for updateUserProfile. This may indicate a session issue.");
+      throw new Error("User session error. Cannot update profile.");
+    }
+
     try {
-      const firebaseCurrentUser = firebase.auth().currentUser;
-       if (!firebaseCurrentUser) {
-        console.error("Firebase currentUser not available for updateUserProfile");
-        throw new Error("User session error");
-      }
       const idToken = await firebaseCurrentUser.getIdToken();
       const response = await axios.patch(`${API_BASE_URL}/updateUserProfile`, profileData, { headers: { Authorization: `Bearer ${idToken}` } });
 
@@ -390,137 +402,179 @@ const useStore = create((set, get) => ({
   // --- Reminder Actions ---
   addReminderStore: async (reminderData) => { // Renamed to avoid conflict if an old addReminder exists
     const { user } = get();
-    if (!user) { console.error("User not authenticated for addReminder"); return null; }
+    const firebaseCurrentUser = firebase.auth().currentUser; // Re-check currentUser before sensitive operations
+    if (!user || !firebaseCurrentUser) {
+      console.error("User not authenticated for addReminder. Firebase user:", firebaseCurrentUser, "Zustand user:", user);
+      return null;
+    }
     try {
-      const idToken = await firebase.auth().currentUser.getIdToken();
+      const idToken = await firebaseCurrentUser.getIdToken();
       const headers = { Authorization: `Bearer ${idToken}` };
       const response = await axios.post(`${API_BASE_URL}/addReminder`, reminderData, { headers });
-      if (response.status === 201) {
+      if (response.status === 201 && response.data) {
         set(state => ({ reminders: [...state.reminders, response.data] }));
         return response.data;
       }
+      console.error("Error adding reminder: Invalid response from server", response.status, response.data);
       return null;
     } catch (error) {
-      console.error("Error adding reminder:", error.response ? error.response.data : error.message);
+      console.error("Error adding reminder:", error.message, error.response ? error.response.data : '');
       return null;
     }
   },
-  deleteReminderStore: async (reminderId) => { // Renamed
-    const { user } = get();
-    if (!user) { console.error("User not authenticated for deleteReminder"); return; }
+  deleteReminderStore: async (reminderId) => {
+    const firebaseCurrentUser = firebase.auth().currentUser;
+    if (!get().user || !firebaseCurrentUser) {
+      console.error("User not authenticated for deleteReminder.");
+      return;
+    }
     try {
-      const idToken = await firebase.auth().currentUser.getIdToken();
+      const idToken = await firebaseCurrentUser.getIdToken();
       const headers = { Authorization: `Bearer ${idToken}` };
       await axios.delete(`${API_BASE_URL}/deleteReminder/${reminderId}`, { headers });
       set(state => ({ reminders: state.reminders.filter(r => r.id !== reminderId) }));
     } catch (error) {
-      console.error("Error deleting reminder:", error.response ? error.response.data : error.message);
+      console.error("Error deleting reminder:", error.message, error.response ? error.response.data : '');
     }
   },
 
   // --- Appointment Actions ---
-  addAppointmentStore: async (appointmentData) => { // Renamed
-    const { user } = get();
-    if (!user) { console.error("User not authenticated for addAppointment"); return null; }
+  addAppointmentStore: async (appointmentData) => {
+    const firebaseCurrentUser = firebase.auth().currentUser;
+    if (!get().user || !firebaseCurrentUser) {
+      console.error("User not authenticated for addAppointment.");
+      return null;
+    }
     try {
-      const idToken = await firebase.auth().currentUser.getIdToken();
+      const idToken = await firebaseCurrentUser.getIdToken();
       const headers = { Authorization: `Bearer ${idToken}` };
       const response = await axios.post(`${API_BASE_URL}/addAppointment`, appointmentData, { headers });
-      if (response.status === 201) {
+      if (response.status === 201 && response.data) {
         set(state => ({ appointments: [...state.appointments, response.data] }));
         return response.data;
       }
+      console.error("Error adding appointment: Invalid response from server", response.status, response.data);
       return null;
     } catch (error) {
-      console.error("Error adding appointment:", error.response ? error.response.data : error.message);
+      console.error("Error adding appointment:", error.message, error.response ? error.response.data : '');
       return null;
     }
   },
-  updateAppointmentStore: async (appointmentId, dataToUpdate) => { // Renamed
-    const { user } = get();
-    if (!user) { console.error("User not authenticated for updateAppointment"); return null; }
+  updateAppointmentStore: async (appointmentId, dataToUpdate) => {
+    const firebaseCurrentUser = firebase.auth().currentUser;
+    if (!get().user || !firebaseCurrentUser) {
+      console.error("User not authenticated for updateAppointment.");
+      return null;
+    }
     try {
-      const idToken = await firebase.auth().currentUser.getIdToken();
+      const idToken = await firebaseCurrentUser.getIdToken();
       const headers = { Authorization: `Bearer ${idToken}` };
       const response = await axios.patch(`${API_BASE_URL}/updateAppointment/${appointmentId}`, dataToUpdate, { headers });
-      if (response.status === 200) {
+      if (response.status === 200 && response.data) {
         set(state => ({
           appointments: state.appointments.map(a => a.id === appointmentId ? response.data : a)
         }));
         return response.data;
       }
+      console.error("Error updating appointment: Invalid response from server", response.status, response.data);
       return null;
     } catch (error) {
-      console.error("Error updating appointment:", error.response ? error.response.data : error.message);
+      console.error("Error updating appointment:", error.message, error.response ? error.response.data : '');
       return null;
     }
   },
-  deleteAppointmentStore: async (appointmentId) => { // Renamed
-    const { user } = get();
-    if (!user) { console.error("User not authenticated for deleteAppointment"); return; }
+  deleteAppointmentStore: async (appointmentId) => {
+    const firebaseCurrentUser = firebase.auth().currentUser;
+    if (!get().user || !firebaseCurrentUser) {
+      console.error("User not authenticated for deleteAppointment.");
+      return;
+    }
     try {
-      const idToken = await firebase.auth().currentUser.getIdToken();
+      const idToken = await firebaseCurrentUser.getIdToken();
       const headers = { Authorization: `Bearer ${idToken}` };
       await axios.delete(`${API_BASE_URL}/deleteAppointment/${appointmentId}`, { headers });
       set(state => ({ appointments: state.appointments.filter(a => a.id !== appointmentId) }));
     } catch (error) {
-      console.error("Error deleting appointment:", error.response ? error.response.data : error.message);
+      console.error("Error deleting appointment:", error.message, error.response ? error.response.data : '');
     }
   },
 
   // --- Friend Actions ---
-  addFriendStore: async (friendUid) => { // Renamed
-    const { user } = get();
-    if (!user) { console.error("User not authenticated for addFriend"); return; }
+  addFriendStore: async (friendUid) => {
+    const firebaseCurrentUser = firebase.auth().currentUser;
+    if (!get().user || !firebaseCurrentUser) {
+      console.error("User not authenticated for addFriend.");
+      return;
+    }
     try {
-      const idToken = await firebase.auth().currentUser.getIdToken();
+      const idToken = await firebaseCurrentUser.getIdToken();
       const headers = { Authorization: `Bearer ${idToken}` };
       await axios.post(`${API_BASE_URL}/addFriend`, { friendUid }, { headers });
-      get().initializeProfileData();
+      get().initializeProfileData(); // Refresh data after adding friend
     } catch (error) {
-      console.error("Error adding friend:", error.response ? error.response.data : error.message);
+      console.error("Error adding friend:", error.message, error.response ? error.response.data : '');
     }
   },
-  removeFriendStore: async (friendUid) => { // Renamed
-    const { user } = get();
-    if (!user) { console.error("User not authenticated for removeFriend"); return; }
+  removeFriendStore: async (friendUid) => {
+    const firebaseCurrentUser = firebase.auth().currentUser;
+    if (!get().user || !firebaseCurrentUser) {
+      console.error("User not authenticated for removeFriend.");
+      return;
+    }
     try {
-      const idToken = await firebase.auth().currentUser.getIdToken();
+      const idToken = await firebaseCurrentUser.getIdToken();
       const headers = { Authorization: `Bearer ${idToken}` };
       await axios.delete(`${API_BASE_URL}/removeFriend/${friendUid}`, { headers });
-      get().initializeProfileData();
+      get().initializeProfileData(); // Refresh data after removing friend
     } catch (error) {
-      console.error("Error removing friend:", error.response ? error.response.data : error.message);
+      console.error("Error removing friend:", error.message, error.response ? error.response.data : '');
     }
   },
 
   // --- Challenge Actions ---
-  joinChallengeStore: async (challengeId) => { // Renamed
-    const { user } = get();
-    if (!user) { console.error("User not authenticated for joinChallenge"); return; }
+  joinChallengeStore: async (challengeId) => {
+    const firebaseCurrentUser = firebase.auth().currentUser;
+    if (!get().user || !firebaseCurrentUser) {
+      console.error("User not authenticated for joinChallenge.");
+      return;
+    }
     try {
-      const idToken = await firebase.auth().currentUser.getIdToken();
+      const idToken = await firebaseCurrentUser.getIdToken();
       const headers = { Authorization: `Bearer ${idToken}` };
-      await axios.post(`${API_BASE_URL}/joinChallenge`, { challengeId }, { headers });
-      set(state => ({
-        challenges: state.challenges.map(c => c.id === challengeId ? { ...c, joined: true } : c)
-      }));
+      // Assuming backend returns the updated challenge or confirms success
+      const response = await axios.post(`${API_BASE_URL}/joinChallenge`, { challengeId }, { headers });
+      if (response.status === 200) { // Or 201, depending on backend
+        // Optimistically update UI, or call initializeProfileData to refetch all challenge states
+        set(state => ({
+          challenges: state.challenges.map(c => c.id === challengeId ? { ...c, joined: true, progress: response.data?.progress || 0 } : c)
+        }));
+      } else {
+        console.error("Failed to join challenge, server responded with status:", response.status);
+      }
     } catch (error) {
-      console.error("Error joining challenge:", error.response ? error.response.data : error.message);
+      console.error("Error joining challenge:", error.message, error.response ? error.response.data : '');
     }
   },
-  leaveChallengeStore: async (challengeId) => { // Renamed
-    const { user } = get();
-    if (!user) { console.error("User not authenticated for leaveChallenge"); return; }
+  leaveChallengeStore: async (challengeId) => {
+    const firebaseCurrentUser = firebase.auth().currentUser;
+    if (!get().user || !firebaseCurrentUser) {
+      console.error("User not authenticated for leaveChallenge.");
+      return;
+    }
     try {
-      const idToken = await firebase.auth().currentUser.getIdToken();
+      const idToken = await firebaseCurrentUser.getIdToken();
       const headers = { Authorization: `Bearer ${idToken}` };
-      await axios.post(`${API_BASE_URL}/leaveChallenge`, { challengeId }, { headers });
-      set(state => ({
-        challenges: state.challenges.map(c => c.id === challengeId ? { ...c, joined: false, progress: 0 } : c) // Also reset progress
-      }));
+      const response = await axios.post(`${API_BASE_URL}/leaveChallenge`, { challengeId }, { headers });
+       if (response.status === 200) {
+        // Optimistically update UI or refetch
+        set(state => ({
+          challenges: state.challenges.map(c => c.id === challengeId ? { ...c, joined: false, progress: 0 } : c)
+        }));
+      } else {
+        console.error("Failed to leave challenge, server responded with status:", response.status);
+      }
     } catch (error) {
-      console.error("Error leaving challenge:", error.response ? error.response.data : error.message);
+      console.error("Error leaving challenge:", error.message, error.response ? error.response.data : '');
     }
   },
 }));

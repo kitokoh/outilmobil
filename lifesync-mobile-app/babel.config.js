@@ -12,5 +12,7 @@ module.exports = {
         allowUndefined: true,
       },
     ],
+    'babel-plugin-react-native-web', // Add react-native-web babel plugin
+    'transform-inline-environment-variables', // For process.env handling, often used with react-native-web
   ],
 };
