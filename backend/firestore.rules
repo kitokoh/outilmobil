@@ -1,8 +1,52 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+
+    // Publicly readable collections
+    match /profileTemplates/{templateId} {
+      allow read: if true;
+      allow write: if false; // Admin-only writes
     }
+    match /challenges/{challengeId} {
+      allow read: if true;
+      allow write: if false; // Admin-only writes
+    }
+    match /communityTemplates/{templateId} {
+      allow read: if true;
+      allow write: if false; // Admin-only writes
+    }
+    match /aiSuggestions/{suggestionId} {
+      allow read: if true;
+      allow write: if false; // Admin-only writes
+    }
+
+    // User's own document in 'users' collection
+    match /users/{userId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
+    // Subcollections under a user's document
+    // Example for 'joinedChallenges'. Add other subcollections if they exist.
+    match /users/{userId}/joinedChallenges/{challengeId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
+    // Other user-specific collections where data references userId
+    match /reminders/{reminderId} {
+      allow read, write: if request.auth.uid == resource.data.userId;
+    }
+    match /appointments/{appointmentId} {
+      allow read, write: if request.auth.uid == resource.data.userId;
+    }
+
+    // By default, deny access to any other paths not explicitly matched above.
+    // This is implicitly handled if no other rule matches.
+    // Explicitly, you could add this at the end if desired, but it's not strictly
+    // necessary if all accessible paths are defined above.
+    // match /{document=**} {
+    //   allow read, write: if false;
+    // }
+    // For this update, we will rely on explicit matches and the default deny.
   }
 }
