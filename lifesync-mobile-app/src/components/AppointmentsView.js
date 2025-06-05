@@ -14,11 +14,12 @@ const AppointmentsView = ({ styles }) => { // Removed props now coming from stor
       <View style={styles.viewHeader}>
         <Text style={styles.viewTitle}>Mes Rendez-vous</Text>
         <TouchableOpacity style={styles.primaryButton} onPress={() => { /* Call createNewAppointment action here */ }}>
-          <Plus size={16} color="white" />
+          <Plus size={16} color={styles.colors.textOnPrimary} />
           <Text style={styles.primaryButtonText}>Nouveau RDV</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Assuming infoCard and contactCard styles are already themed from global styles */}
       <View style={styles.infoCard}>
         <Text style={styles.infoCardTitle}>Prise de RDV avec contacts</Text>
         <View style={styles.gridTwoCols}>
@@ -27,7 +28,12 @@ const AppointmentsView = ({ styles }) => { // Removed props now coming from stor
               <Text style={styles.contactAvatar}>{friend.avatar}</Text>
               <View>
                 <Text style={styles.contactName}>{friend.name}</Text>
-                <Text style={styles.contactActionText}>Planifier RDV</Text>
+                {/* contactActionText color was blue600, which is not a standard semantic color in the new theme.
+                    Using styles.colors.primary or styles.colors.secondary might be options.
+                    For now, let's assume styles.contactActionText handles its color appropriately or is themed.
+                    If it used a specific blue, e.g. styles.colors.blue600, that should be used if available.
+                */}
+                <Text style={[styles.contactActionText, {color: styles.colors.primary}]}>Planifier RDV</Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -49,16 +55,20 @@ const AppointmentsView = ({ styles }) => { // Removed props now coming from stor
             </View>
             <View style={styles.listItemFooter}>
               <View style={styles.listItemMeta}>
-                <MapPin size={16} color="#9CA3AF" />
+                <MapPin size={16} color={styles.colors.textLight} />
                 <Text style={styles.listItemLocation}>{appointment.location}</Text>
-                <Text style={[styles.badge, appointment.confirmed ? styles.badgeSuccess : styles.badgeWarning]}>
+                <Text style={[
+                  styles.badge,
+                  appointment.confirmed ? styles.badgeSuccess : styles.badgeWarning
+                  // badgeSuccess and badgeWarning should use textOnPrimary or textOnError from global styles
+                ]}>
                   {appointment.confirmed ? 'Confirmé' : 'En attente'}
                 </Text>
               </View>
               <View style={styles.listItemActions}>
-                <TouchableOpacity><Phone size={16} color="#9CA3AF" /></TouchableOpacity>
-                <TouchableOpacity><Video size={16} color="#9CA3AF" /></TouchableOpacity>
-                <TouchableOpacity><Edit3 size={16} color="#9CA3AF" /></TouchableOpacity>
+                <TouchableOpacity><Phone size={16} color={styles.colors.textLight} /></TouchableOpacity>
+                <TouchableOpacity><Video size={16} color={styles.colors.textLight} /></TouchableOpacity>
+                <TouchableOpacity><Edit3 size={16} color={styles.colors.textLight} /></TouchableOpacity>
               </View>
             </View>
           </View>

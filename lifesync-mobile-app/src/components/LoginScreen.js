@@ -52,48 +52,50 @@ const LoginScreen = ({ styles: globalStyles }) => { // Accept globalStyles as a 
   );
 };
 
-// Local styles for LoginScreen, can use colors/fonts from globalStyles if needed for consistency
+// Local styles for LoginScreen, referencing globalStyles
 const loginStyles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24, // p-6
-    backgroundColor: '#F8FAFC', // bg-slate-50 from globalStyles.safeArea.backgroundColor
+    padding: globalStyles.spacing.lg, // p-6 -> spacing.lg (24)
+    backgroundColor: globalStyles.colors.background, // bg-slate-50
   },
-  title: {
-    marginBottom: 8, // mb-2
-    color: '#4F46E5', // text-indigo-600 from globalStyles.headerTitle.color
+  title: { // This uses globalStyles.viewTitle which has its own marginBottom if applied directly
+    // If viewTitle is used directly on Text, this local style might only need to adjust color if different
+    // For now, assuming direct application of globalStyles.viewTitle, and this is for overrides or additions
+    marginBottom: globalStyles.spacing.xs, // mb-2 -> spacing.xs (8)
+    color: globalStyles.colors.primary, // text-indigo-600
   },
-  subtitle: {
-    marginBottom: 32, // mb-8
+  subtitle: { // Similarly, globalStyles.viewSubtitle could be used
+    marginBottom: globalStyles.spacing.xl, // mb-8 -> spacing.xl (32)
     textAlign: 'center',
-    color: '#475569', // text-slate-600 from globalStyles.textSlate600.color
+    color: globalStyles.colors.textSecondary, // text-slate-600
   },
   inputContainer: {
     width: '100%',
-    marginBottom: 24, // mb-6
+    marginBottom: globalStyles.spacing.lg, // mb-6 -> spacing.lg (24)
   },
   input: {
-    backgroundColor: '#FFFFFF', // bg-white
-    borderColor: '#E2E8F0', // border-slate-200
+    backgroundColor: globalStyles.colors.surface, // bg-white
+    borderColor: globalStyles.colors.border, // border-slate-200
     borderWidth: 1,
-    borderRadius: 8, // rounded-lg
-    paddingHorizontal: 16, // px-4
-    paddingVertical: 12, // py-3
-    fontSize: 16, // text-base
-    marginBottom: 16, // mb-4
-    color: '#0F172A', // text-slate-900
+    borderRadius: 8, // Keep as is, or define in spacing e.g. spacing.sm / 2 for consistency if desired for radii
+    paddingHorizontal: globalStyles.spacing.md, // px-4 -> spacing.md (16)
+    paddingVertical: globalStyles.spacing.sm, // py-3 -> spacing.sm (12)
+    fontSize: globalStyles.textSizes.md, // text-base -> textSizes.md (16)
+    marginBottom: globalStyles.spacing.md, // mb-4 -> spacing.md (16)
+    color: globalStyles.colors.text, // text-slate-900
   },
-  loginButton: {
+  loginButton: { // Merged with globalStyles.primaryButton, so this can be for specific overrides
     width: '100%',
-    marginTop: 8, // mt-2
+    marginTop: globalStyles.spacing.xs, // mt-2 -> spacing.xs (8)
   },
   errorText: {
-    color: '#DC2626', // colors.red600
-    fontSize: 14, // text-sm
+    color: globalStyles.colors.error, // colors.red600
+    fontSize: globalStyles.textSizes.sm, // text-sm -> textSizes.sm (14)
     textAlign: 'center',
-    marginBottom: 16, // mb-4
+    marginBottom: globalStyles.spacing.md, // mb-4 -> spacing.md (16)
   },
 });
 
