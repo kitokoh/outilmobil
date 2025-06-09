@@ -12,14 +12,23 @@ const AllReminders = ({ styles }) => { // Removed props now coming from store
     <View style={styles.viewContainer}>
       <View style={styles.viewHeader}>
         <Text style={styles.viewTitle}>Mes Rappels</Text>
-        <TouchableOpacity style={[styles.iconButton, {backgroundColor: '#6366F1'}]}>
+        <TouchableOpacity
+          style={[styles.iconButton, {backgroundColor: '#6366F1'}]}
+          accessibilityLabel="Add new task"
+          accessibilityRole="button"
+        >
           <Plus size={20} color="white" />
         </TouchableOpacity>
       </View>
       <ScrollView style={styles.listContainerScrollView}>
         {reminders.map((reminder) => (
           <View key={reminder.id} style={styles.reminderItemCard}>
-            <TouchableOpacity onPress={() => toggleReminderCompleted(reminder.id)}>
+            <TouchableOpacity
+              onPress={() => toggleReminderCompleted(reminder.id)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: reminder.completed }}
+              accessibilityLabel={reminder.completed ? `Mark task ${reminder.task} as incomplete` : `Mark task ${reminder.task} as complete`}
+            >
               {reminder.completed ? <CheckCircle size={24} color="#10B981" /> : <Circle size={24} color="#9CA3AF" />}
             </TouchableOpacity>
             <View style={styles.reminderDetails}>
@@ -45,8 +54,18 @@ const AllReminders = ({ styles }) => { // Removed props now coming from store
               </View>
             </View>
             <View style={styles.reminderActions}>
-              <TouchableOpacity><Edit3 size={16} color="#9CA3AF" /></TouchableOpacity>
-              <TouchableOpacity><Trash2 size={16} color="#EF4444" /></TouchableOpacity>
+              <TouchableOpacity
+                accessibilityLabel={`Edit task ${reminder.task}`}
+                accessibilityRole="button"
+              >
+                <Edit3 size={16} color="#9CA3AF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                accessibilityLabel={`Delete task ${reminder.task}`}
+                accessibilityRole="button"
+              >
+                <Trash2 size={16} color="#EF4444" />
+              </TouchableOpacity>
             </View>
           </View>
         ))}

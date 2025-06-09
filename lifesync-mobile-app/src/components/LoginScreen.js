@@ -34,6 +34,7 @@ const LoginScreen = ({ styles: globalStyles }) => { // Accept globalStyles as a 
           keyboardType="email-address"
           autoCapitalize="none"
           placeholderTextColor={globalStyles.textSlate400.color}
+          accessibilityLabel="Email address input"
         />
         <TextInput
           style={loginStyles.input}
@@ -42,10 +43,15 @@ const LoginScreen = ({ styles: globalStyles }) => { // Accept globalStyles as a 
           onChangeText={setPassword}
           secureTextEntry
           placeholderTextColor={globalStyles.textSlate400.color}
+          accessibilityLabel="Password input"
         />
       </View>
       
-      <TouchableOpacity style={[globalStyles.primaryButton, loginStyles.loginButton]} onPress={handleLogin}>
+      <TouchableOpacity
+        style={[globalStyles.primaryButton, loginStyles.loginButton]}
+        onPress={handleLogin}
+        accessibilityRole="button"
+      >
         <Text style={globalStyles.primaryButtonText}>Login</Text>
       </TouchableOpacity>
     </View>

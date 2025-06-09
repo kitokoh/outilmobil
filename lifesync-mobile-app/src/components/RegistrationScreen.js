@@ -51,6 +51,7 @@ const RegistrationScreen = ({ navigation }) => {
         value={name}
         onChangeText={setName}
         autoCapitalize="words"
+        accessibilityLabel="Full name input"
       />
       <TextInput
         style={styles.input}
@@ -59,6 +60,7 @@ const RegistrationScreen = ({ navigation }) => {
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
+        accessibilityLabel="Email address input"
       />
       <TextInput
         style={styles.input}
@@ -66,11 +68,16 @@ const RegistrationScreen = ({ navigation }) => {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        accessibilityLabel="Password input"
       />
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
+      <TouchableOpacity style={styles.button} onPress={handleRegister} accessibilityRole="button">
         <Text style={styles.buttonText}>Register</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={[styles.button, styles.buttonOutline]} onPress={handleGoToLogin}>
+      <TouchableOpacity
+        style={[styles.button, styles.buttonOutline]}
+        onPress={handleGoToLogin}
+        accessibilityRole="button"
+      >
         <Text style={[styles.buttonText, styles.buttonOutlineText]}>Back to Login</Text>
       </TouchableOpacity>
     </View>

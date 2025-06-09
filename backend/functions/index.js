@@ -31,15 +31,25 @@ exports.registerUser = functions.https.onRequest((req, res) => {
       const userProfile = {
         uid: userRecord.uid,
         email: userRecord.email,
-        name: req.body.name || userRecord.email, // Use name from request body or default to email
+        displayName: req.body.displayName || null, // Per schema, displayName is optional
+        profileType: "Student", // Default value
+        preferences: {
+          theme: "light",
+          fontSizeMultiplier: 1.0,
+          notificationSettings: {
+            taskReminders: true,
+            appointmentAlerts: true,
+          }
+        },
+        aiCoachSettings: {
+          taskSuggestionsEnabled: true,
+        },
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        // Initialize other profile fields as needed
-        bio: '',
-        avatarUrl: '',
+        // photoURL can be added via updateUserProfile
       };
       await db.collection('users').doc(userRecord.uid).set(userProfile);
 
-      return res.status(201).send({ uid: userRecord.uid, email: userRecord.email, name: userProfile.name });
+      return res.status(201).send({ uid: userRecord.uid, email: userRecord.email, displayName: userProfile.displayName });
     } catch (error) {
       console.error('Error creating new user:', error);
       // Provide more specific error messages if possible
@@ -138,12 +148,17 @@ exports.updateUserProfile = functions.https.onRequest((req, res) => {
     delete dataToUpdate.uid;
     delete dataToUpdate.email;
     delete dataToUpdate.createdAt; // Should not be updated by user
+    dataToUpdate.updatedAt = admin.firestore.FieldValue.serverTimestamp();
 
     try {
       const db = admin.firestore();
       const userProfileRef = db.collection('users').doc(userId);
 
-      await userProfileRef.set(dataToUpdate, { merge: true }); // Use merge: true to update existing fields or create if not present
+      // Using update method which is suitable for partial updates.
+      // Firestore's update method with dot notation (e.g., 'preferences.theme') works for nested fields.
+      // If the client sends the whole map, it will overwrite the map.
+      // It's generally better for clients to send specific fields to update using dot notation for nested maps.
+      await userProfileRef.update(dataToUpdate);
 
       const updatedDoc = await userProfileRef.get();
       return res.status(200).send(updatedDoc.data());
@@ -236,18 +251,15 @@ exports.getProfileTemplates = functions.https.onRequest((req, res) => {
   });
 });
 /**
- * Retrieves reminders for the authenticated user.
- * Optionally filters by profileId and falls back to profile template routines.
+ * Retrieves tasks for the authenticated user.
  * Requires authentication.
  */
-exports.getReminders = functions.https.onRequest((req, res) => {
+exports.getTasks = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     if (req.method !== 'GET') {
       return res.status(405).send('Method Not Allowed');
     }
 
-    // Authentication check (example, adapt to your auth method if not using callable)
-    // For HTTPS onRequest, you'd typically verify an ID token passed in Authorization header
     const idToken = req.headers.authorization?.split('Bearer ')[1];
     if (!idToken) {
       return res.status(403).send('Unauthorized: No token provided.');
@@ -261,58 +273,32 @@ exports.getReminders = functions.https.onRequest((req, res) => {
       return res.status(403).send('Unauthorized: Invalid token.');
     }
     const userId = decodedToken.uid;
-    const { profileId } = req.query;
 
     try {
       const db = admin.firestore();
-      let reminders = [];
+      const tasks = [];
+      const query = db.collection('tasks').where('userId', '==', userId);
+      const userTasksSnapshot = await query.get();
 
-      // Fetch user-specific reminders
-      // If profileId is provided, filter by it as well. Otherwise, fetch all for the user.
-      let query = db.collection('reminders').where('userId', '==', userId);
-      if (profileId) {
-          query = query.where('profileId', '==', profileId);
-      }
-      const userRemindersSnapshot = await query.get();
-
-      if (!userRemindersSnapshot.empty) {
-        userRemindersSnapshot.forEach(doc => {
-          reminders.push({ id: doc.id, ...doc.data() });
+      if (!userTasksSnapshot.empty) {
+        userTasksSnapshot.forEach(doc => {
+          tasks.push({ id: doc.id, ...doc.data() });
         });
       }
-
-      // Fallback to profile template routines if no user-specific reminders found for the given profileId
-      if (reminders.length === 0 && profileId) {
-        const profileTemplateDoc = await db.collection('profileTemplates').doc(profileId).get();
-        if (profileTemplateDoc.exists) {
-          const templateData = profileTemplateDoc.data();
-          if (templateData.routines && Array.isArray(templateData.routines)) {
-            reminders = templateData.routines.map(routine => ({
-              ...routine, // Spread existing routine properties like id, time, task
-              profileId: profileId, // Ensure profileId is set
-              userId: userId, // Assign to current user
-              isTemplate: true, // Mark as a template, client might handle differently
-              // Ensure completed and streak are present as per original store.js logic
-              completed: routine.completed !== undefined ? routine.completed : false,
-              streak: routine.streak !== undefined ? routine.streak : 0,
-            }));
-          }
-        }
-      }
-
-      return res.status(200).send(reminders);
+      // Removed fallback to profileTemplates for Phase 1
+      return res.status(200).send(tasks);
     } catch (error) {
-      console.error('Error getting reminders:', error);
-      return res.status(500).send({ error: 'Error getting reminders.' });
+      console.error('Error getting tasks:', error);
+      return res.status(500).send({ error: 'Error getting tasks.' });
     }
   });
 });
 
 /**
- * Adds a new reminder for the authenticated user.
+ * Adds a new task for the authenticated user.
  * Requires authentication.
  */
-exports.addReminder = functions.https.onRequest((req, res) => {
+exports.addTask = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     if (req.method !== 'POST') {
       return res.status(405).send('Method Not Allowed');
@@ -325,40 +311,39 @@ exports.addReminder = functions.https.onRequest((req, res) => {
     catch (error) { return res.status(403).send('Unauthorized: Invalid token.'); }
     const userId = decodedToken.uid;
 
-    const { task, time, category, priority, profileId } = req.body;
-    if (!task || !profileId) { // Added profileId as required based on original structure
-      return res.status(400).send({ error: 'Task and profileId are required.' });
+    const { title, description, dueDate, category, priority } = req.body;
+    if (!title) {
+      return res.status(400).send({ error: 'Title is required for a task.' });
     }
 
     try {
       const db = admin.firestore();
-      const newReminder = {
+      const newTask = {
         userId,
-        profileId, // Store profileId with the reminder
-        task,
-        time: time || null,
-        category: category || 'personnel',
-        priority: priority || 'medium',
-        completed: false,
-        streak: 0,
-        aiOptimized: false, // Default value
+        title,
+        description: description || null,
+        dueDate: dueDate || null, // Should be a Firestore Timestamp if provided
+        isCompleted: false,
+        // completedAt will be set when task is completed
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        category: category || null,
+        priority: priority || null,
       };
-      const docRef = await db.collection('reminders').add(newReminder);
-      return res.status(201).send({ id: docRef.id, ...newReminder });
+      const docRef = await db.collection('tasks').add(newTask);
+      return res.status(201).send({ id: docRef.id, ...newTask });
     } catch (error) {
-      console.error('Error adding reminder:', error);
-      return res.status(500).send({ error: 'Error adding reminder.' });
+      console.error('Error adding task:', error);
+      return res.status(500).send({ error: 'Error adding task.' });
     }
   });
 });
 
 /**
- * Updates an existing reminder for the authenticated user.
- * Can be used for toggling completion or other fields.
+ * Updates an existing task for the authenticated user.
  * Requires authentication.
  */
-exports.updateReminder = functions.https.onRequest((req, res) => {
+exports.updateTask = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     if (req.method !== 'PATCH' && req.method !== 'PUT') {
       return res.status(405).send('Method Not Allowed');
@@ -371,48 +356,56 @@ exports.updateReminder = functions.https.onRequest((req, res) => {
     catch (error) { return res.status(403).send('Unauthorized: Invalid token.'); }
     const userId = decodedToken.uid;
 
-    const reminderId = req.params.id || req.path.split('/').pop(); // Get ID from path e.g. /reminders/:id
+    const taskId = req.params.id || req.path.split('/').pop();
     const dataToUpdate = req.body;
 
-    if (!reminderId) {
-        return res.status(400).send({ error: 'Reminder ID is required in the path.' });
+    if (!taskId) {
+        return res.status(400).send({ error: 'Task ID is required in the path.' });
     }
     if (Object.keys(dataToUpdate).length === 0) {
         return res.status(400).send({ error: 'No data provided for update.' });
     }
-    // Prevent user from updating userId
-    if (dataToUpdate.userId) {
-        delete dataToUpdate.userId;
+    // Prevent user from updating userId or createdAt
+    delete dataToUpdate.userId;
+    delete dataToUpdate.createdAt;
+
+    dataToUpdate.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+
+    // Handle completedAt based on isCompleted status
+    if (dataToUpdate.isCompleted === true) {
+        dataToUpdate.completedAt = admin.firestore.FieldValue.serverTimestamp();
+    } else if (dataToUpdate.isCompleted === false) {
+        dataToUpdate.completedAt = null; // Or FieldValue.delete() to remove it
     }
+
 
     try {
       const db = admin.firestore();
-      const reminderRef = db.collection('reminders').doc(reminderId);
-      const doc = await reminderRef.get();
+      const taskRef = db.collection('tasks').doc(taskId);
+      const doc = await taskRef.get();
 
       if (!doc.exists) {
-        return res.status(404).send({ error: 'Reminder not found.' });
+        return res.status(404).send({ error: 'Task not found.' });
       }
       if (doc.data().userId !== userId) {
-        return res.status(403).send({ error: 'User not authorized to update this reminder.' });
+        return res.status(403).send({ error: 'User not authorized to update this task.' });
       }
 
-      // For PATCH, merge. For PUT, replace (Firestore update does a merge by default for specified fields)
-      await reminderRef.update(dataToUpdate);
-      const updatedDoc = await reminderRef.get();
+      await taskRef.update(dataToUpdate);
+      const updatedDoc = await taskRef.get();
       return res.status(200).send({ id: updatedDoc.id, ...updatedDoc.data() });
     } catch (error) {
-      console.error('Error updating reminder:', error);
-      return res.status(500).send({ error: 'Error updating reminder.' });
+      console.error('Error updating task:', error);
+      return res.status(500).send({ error: 'Error updating task.' });
     }
   });
 });
 
 /**
- * Deletes a reminder for the authenticated user.
+ * Deletes a task for the authenticated user.
  * Requires authentication.
  */
-exports.deleteReminder = functions.https.onRequest((req, res) => {
+exports.deleteTask = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     if (req.method !== 'DELETE') {
       return res.status(405).send('Method Not Allowed');
@@ -425,29 +418,29 @@ exports.deleteReminder = functions.https.onRequest((req, res) => {
     catch (error) { return res.status(403).send('Unauthorized: Invalid token.'); }
     const userId = decodedToken.uid;
 
-    const reminderId = req.params.id || req.path.split('/').pop(); // Get ID from path e.g. /reminders/:id
+    const taskId = req.params.id || req.path.split('/').pop();
 
-    if (!reminderId) {
-        return res.status(400).send({ error: 'Reminder ID is required in the path.' });
+    if (!taskId) {
+        return res.status(400).send({ error: 'Task ID is required in the path.' });
     }
 
     try {
       const db = admin.firestore();
-      const reminderRef = db.collection('reminders').doc(reminderId);
-      const doc = await reminderRef.get();
+      const taskRef = db.collection('tasks').doc(taskId);
+      const doc = await taskRef.get();
 
       if (!doc.exists) {
-        return res.status(404).send({ error: 'Reminder not found.' });
+        return res.status(404).send({ error: 'Task not found.' });
       }
       if (doc.data().userId !== userId) {
-        return res.status(403).send({ error: 'User not authorized to delete this reminder.' });
+        return res.status(403).send({ error: 'User not authorized to delete this task.' });
       }
 
-      await reminderRef.delete();
-      return res.status(200).send({ message: 'Reminder deleted successfully.' });
+      await taskRef.delete();
+      return res.status(200).send({ message: 'Task deleted successfully.' });
     } catch (error) {
-      console.error('Error deleting reminder:', error);
-      return res.status(500).send({ error: 'Error deleting reminder.' });
+      console.error('Error deleting task:', error);
+      return res.status(500).send({ error: 'Error deleting task.' });
     }
   });
 });
@@ -474,7 +467,21 @@ exports.getAppointments = functions.https.onRequest((req, res) => {
 
       const appointments = [];
       appointmentsSnapshot.forEach(doc => {
-        appointments.push({ id: doc.id, ...doc.data() });
+        let apptData = { id: doc.id, ...doc.data() };
+        // Convert timestamps to ISO strings for consistent client response
+        if (apptData.createdAt && apptData.createdAt.toDate) {
+          apptData.createdAt = apptData.createdAt.toDate().toISOString();
+        }
+        if (apptData.updatedAt && apptData.updatedAt.toDate) {
+          apptData.updatedAt = apptData.updatedAt.toDate().toISOString();
+        }
+        if (apptData.startTime && apptData.startTime.toDate) {
+          apptData.startTime = apptData.startTime.toDate().toISOString();
+        }
+        if (apptData.endTime && apptData.endTime.toDate) {
+          apptData.endTime = apptData.endTime.toDate().toISOString();
+        }
+        appointments.push(apptData);
       });
 
       return res.status(200).send(appointments);
@@ -502,26 +509,39 @@ exports.addAppointment = functions.https.onRequest((req, res) => {
     catch (error) { return res.status(403).send('Unauthorized: Invalid token.'); }
     const userId = decodedToken.uid;
 
-    const { title, time, date, with: withPerson, type, location, confirmed } = req.body;
-    if (!title || !date || !time) {
-      return res.status(400).send({ error: 'Title, date, and time are required for an appointment.' });
+    // Fields based on appointments.md schema
+    const { title, description, startTime, endTime, location, category } = req.body;
+
+    if (!title || !startTime || !endTime) {
+      return res.status(400).send({ error: 'Title, startTime, and endTime are required for an appointment.' });
     }
+
+    // Optional: Add validation for startTime and endTime (e.g., ensure they are valid timestamps)
 
     try {
       const db = admin.firestore();
       const newAppointment = {
         userId,
         title,
-        time,
-        date,
-        with: withPerson || null,
-        type: type || 'personal',
+        description: description || null,
+        startTime, // Expecting ISO string or Firestore Timestamp from client
+        endTime,   // Expecting ISO string or Firestore Timestamp from client
         location: location || null,
-        confirmed: confirmed !== undefined ? confirmed : false,
+        category: category || null,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(), // Add updatedAt
       };
       const docRef = await db.collection('appointments').add(newAppointment);
-      return res.status(201).send({ id: docRef.id, ...newAppointment });
+      // Return the new appointment data along with its ID
+      const createdAppointment = { id: docRef.id, ...newAppointment };
+      // Convert server timestamps to string for consistent client response (optional)
+      if (createdAppointment.createdAt.toDate) { // Check if it's a ServerTimestamp
+        createdAppointment.createdAt = createdAppointment.createdAt.toDate().toISOString();
+      }
+      if (createdAppointment.updatedAt.toDate) { // Check if it's a ServerTimestamp
+         createdAppointment.updatedAt = createdAppointment.updatedAt.toDate().toISOString();
+      }
+      return res.status(201).send(createdAppointment);
     } catch (error) {
       console.error('Error adding appointment:', error);
       return res.status(500).send({ error: 'Error adding appointment.' });
@@ -555,7 +575,24 @@ exports.updateAppointment = functions.https.onRequest((req, res) => {
     if (Object.keys(dataToUpdate).length === 0) {
         return res.status(400).send({ error: 'No data provided for update.' });
     }
-    if (dataToUpdate.userId) { delete dataToUpdate.userId; } // Prevent changing owner
+
+    // Prevent updating immutable fields
+    delete dataToUpdate.userId;
+    delete dataToUpdate.createdAt;
+
+    // Add updatedAt timestamp
+    dataToUpdate.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+
+    // Ensure that if startTime or endTime are provided, they are valid (basic check)
+    // More complex validation (e.g. ISO string, endTime > startTime) can be added
+    if (dataToUpdate.startTime && typeof dataToUpdate.startTime !== 'string' && !dataToUpdate.startTime.toDate) {
+        // Assuming client sends ISO string or Firestore Timestamp object
+        return res.status(400).send({ error: 'Invalid startTime format.'});
+    }
+    if (dataToUpdate.endTime && typeof dataToUpdate.endTime !== 'string' && !dataToUpdate.endTime.toDate) {
+        return res.status(400).send({ error: 'Invalid endTime format.'});
+    }
+
 
     try {
       const db = admin.firestore();
@@ -570,8 +607,24 @@ exports.updateAppointment = functions.https.onRequest((req, res) => {
       }
 
       await appointmentRef.update(dataToUpdate);
-      const updatedDoc = await appointmentRef.get();
-      return res.status(200).send({ id: updatedDoc.id, ...updatedDoc.data() });
+      const updatedDocSnapshot = await appointmentRef.get();
+      const updatedData = { id: updatedDocSnapshot.id, ...updatedDocSnapshot.data() };
+
+      // Convert server timestamps to string for consistent client response (optional)
+      if (updatedData.createdAt && updatedData.createdAt.toDate) {
+        updatedData.createdAt = updatedData.createdAt.toDate().toISOString();
+      }
+      if (updatedData.updatedAt && updatedData.updatedAt.toDate) {
+         updatedData.updatedAt = updatedData.updatedAt.toDate().toISOString();
+      }
+       if (updatedData.startTime && updatedData.startTime.toDate) {
+         updatedData.startTime = updatedData.startTime.toDate().toISOString();
+      }
+      if (updatedData.endTime && updatedData.endTime.toDate) {
+         updatedData.endTime = updatedData.endTime.toDate().toISOString();
+      }
+
+      return res.status(200).send(updatedData);
     } catch (error) {
       console.error('Error updating appointment:', error);
       return res.status(500).send({ error: 'Error updating appointment.' });

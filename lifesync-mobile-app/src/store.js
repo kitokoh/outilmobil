@@ -50,7 +50,7 @@ const useStore = create((set, get) => ({
   // Original app state variables
   currentView: 'dashboard',
   userProfile: 'student', 
-  reminders: [],
+  tasks: [], // Renamed from reminders
   appointments: [],
   friends: [],
   challenges: [],
@@ -69,8 +69,8 @@ const useStore = create((set, get) => ({
       const firebaseUser = userCredential.user;
       if (firebaseUser) {
         await firebaseUser.updateProfile({ displayName: name });
-        // Optionally, create a user profile document in Firestore here
-        // Example: await axios.post(`${API_BASE_URL}/users`, { uid: firebaseUser.uid, email: firebaseUser.email, name: name });
+        // The backend registerUser (Auth onCreate trigger) now handles Firestore profile creation.
+        // No need for a separate API call here.
         set({
           isAuthenticated: true,
           // user object from firebaseUser will be set by checkAuthState listener or login
@@ -116,7 +116,7 @@ const useStore = create((set, get) => ({
         detailedUserProfile: null, // Clear detailed profile on logout
         // currentView: 'login', // Decide if view should change, or rely on app logic
         // Clear user-specific data, keep general data if any
-        reminders: [],
+        tasks: [], // Renamed from reminders
         appointments: [],
         friends: [],
         challenges: [],
@@ -156,38 +156,38 @@ const useStore = create((set, get) => ({
     }
   },
 
-  setReminders: (reminders) => set({ reminders }),
+  setTasks: (tasks) => set({ tasks }), // Renamed from setReminders
 
-  toggleReminderCompleted: async (reminderId) => {
-    const { user, reminders } = get();
-    if (!user) return console.error("User not authenticated for toggleReminderCompleted");
+  toggleTaskCompleted: async (taskId) => { // Renamed from toggleReminderCompleted, param reminderId to taskId
+    const { user, tasks } = get(); // Renamed from reminders
+    if (!user) return console.error("User not authenticated for toggleTaskCompleted");
 
-    const reminder = reminders.find(r => r.id === reminderId);
-    if (!reminder) return console.error("Reminder not found for toggle");
+    const task = tasks.find(t => t.id === taskId); // Renamed from reminder
+    if (!task) return console.error("Task not found for toggle"); // Renamed from reminder
 
-    const updatedCompletedStatus = !reminder.completed;
+    const updatedCompletedStatus = !task.completed; // Renamed from reminder
 
     try {
       const idToken = await firebase.auth().currentUser.getIdToken();
       const headers = { Authorization: `Bearer ${idToken}` };
 
-      // Backend updateReminder expects ID in path.
-      const response = await axios.patch(`${API_BASE_URL}/updateReminder/${reminderId}`,
-        { completed: updatedCompletedStatus },
+      // Backend updateTask expects ID in path.
+      const response = await axios.patch(`${API_BASE_URL}/updateTask/${taskId}`, // Renamed endpoint, param taskId
+        { isCompleted: updatedCompletedStatus }, // Field name based on backend `updateTask`
         { headers }
       );
 
       if (response.status === 200) {
         set((state) => ({
-          reminders: state.reminders.map(r =>
-            r.id === reminderId ? { ...r, ...response.data } : r
+          tasks: state.tasks.map(t => // Renamed from reminders
+            t.id === taskId ? { ...t, ...response.data } : t // Renamed from reminderId, r to t
           )
         }));
       } else {
-        console.error("Failed to update reminder on server:", response);
+        console.error("Failed to update task on server:", response); // Renamed from reminder
       }
     } catch (error) {
-      console.error("Error updating reminder:", error.response ? error.response.data : error.message);
+      console.error("Error updating task:", error.response ? error.response.data : error.message); // Renamed from reminder
     }
   },
   
@@ -225,7 +225,7 @@ const useStore = create((set, get) => ({
 
     if (!isAuthenticated || !user) {
       set({
-        reminders: [], appointments: [], friends: [],
+        tasks: [], appointments: [], friends: [], // Renamed from reminders
         challenges: get().challenges || [], // Preserve public challenges if already fetched
         communityTemplates: get().communityTemplates || [], // Preserve public
         aiSuggestions: get().aiSuggestions || [], // Preserve public
@@ -259,7 +259,7 @@ const useStore = create((set, get) => ({
       const db = firebase.firestore(); // For client-side Firestore calls if any remain
 
       const [
-        remindersRes,
+        tasksRes, // Renamed from remindersRes
         appointmentsRes,
         friendsRes,
         challengesRes, // Public challenges list
@@ -267,7 +267,7 @@ const useStore = create((set, get) => ({
         aiSuggestionsRes,
         userJoinedChallengesSnap // Firestore direct call for user's joined challenges
       ] = await Promise.all([
-        axios.get(`${API_BASE_URL}/getReminders?profileId=${userProfile}`, { headers }),
+        axios.get(`${API_BASE_URL}/getTasks`, { headers }), // Renamed endpoint, removed profileId
         axios.get(`${API_BASE_URL}/getAppointments`, { headers }),
         axios.get(`${API_BASE_URL}/getFriends`, { headers }),
         axios.get(`${API_BASE_URL}/getChallenges`),
@@ -276,10 +276,14 @@ const useStore = create((set, get) => ({
         db.collection('users').doc(user.id).collection('joinedChallenges').get() // Direct Firestore SDK call
       ]);
 
-      const processedReminders = remindersRes.data.map(r => ({
-        ...r,
-        streak: r.streak !== undefined ? r.streak : (r.isTemplate ? 0 : Math.floor(Math.random() * 10) + 1),
-        completed: r.completed !== undefined ? r.completed : (r.isTemplate ? false : Math.random() > 0.7),
+      // Backend now returns tasks with fields like isCompleted, dueDate.
+      // Remove random generation of streak and completed.
+      // Assume backend provides necessary fields as per schema.
+      const processedTasks = tasksRes.data.map(t => ({ // Renamed from processedReminders, r to t
+        ...t,
+        // If backend does not send these, and they are purely for UI, initialize them.
+        // For Phase 1, tasks schema has isCompleted, completedAt, dueDate.
+        // Streak is not part of Phase 1 task model.
       }));
 
       const userJoinedChallengeIds = {};
@@ -293,7 +297,7 @@ const useStore = create((set, get) => ({
       }));
 
       set({
-        reminders: processedReminders,
+        tasks: processedTasks, // Renamed from reminders: processedReminders
         appointments: appointmentsRes.data,
         friends: friendsRes.data,
         challenges: processedChallenges,
@@ -304,7 +308,7 @@ const useStore = create((set, get) => ({
     } catch (error) {
       console.error("Failed to fetch data for authenticated user:", error);
       set({ 
-        reminders: [], appointments: [], friends: [],
+        tasks: [], appointments: [], friends: [], // Renamed from reminders
         challenges: get().challenges.map(c => ({...c, joined: false, progress: 0})) || [], // Reset user specific parts
         communityTemplates: get().communityTemplates || [],
         aiSuggestions: get().aiSuggestions || [],
@@ -369,12 +373,12 @@ const useStore = create((set, get) => ({
 
       if (response.data) {
         set({ detailedUserProfile: response.data });
-        // If name was updated, also update Firebase Auth displayName for consistency
-        if (profileData.name && firebaseCurrentUser.displayName !== profileData.name) {
-          await firebaseCurrentUser.updateProfile({ displayName: profileData.name });
+        // If displayName was updated, also update Firebase Auth displayName for consistency
+        if (profileData.displayName && firebaseCurrentUser.displayName !== profileData.displayName) {
+          await firebaseCurrentUser.updateProfile({ displayName: profileData.displayName });
           // Update the 'user' state in Zustand to reflect this change immediately
           set(state => ({
-            user: { ...state.user, name: profileData.name, displayName: profileData.name }
+            user: { ...state.user, name: profileData.displayName, displayName: profileData.displayName } // 'name' in user state obj is used as displayName
           }));
         }
         return response.data; // Return updated profile
@@ -387,44 +391,48 @@ const useStore = create((set, get) => ({
     }
   },
 
-  // --- Reminder Actions ---
-  addReminderStore: async (reminderData) => { // Renamed to avoid conflict if an old addReminder exists
+  // --- Task Actions --- // Renamed from Reminder Actions
+  addTaskStore: async (taskData) => { // Renamed from addReminderStore, param reminderData to taskData
     const { user } = get();
-    if (!user) { console.error("User not authenticated for addReminder"); return null; }
+    if (!user) { console.error("User not authenticated for addTask"); return null; } // Renamed from addReminder
     try {
       const idToken = await firebase.auth().currentUser.getIdToken();
       const headers = { Authorization: `Bearer ${idToken}` };
-      const response = await axios.post(`${API_BASE_URL}/addReminder`, reminderData, { headers });
+      // Ensure taskData matches the backend 'addTask' function's expected payload
+      // e.g., { title, description, dueDate, category, priority }
+      const response = await axios.post(`${API_BASE_URL}/addTask`, taskData, { headers }); // Renamed endpoint
       if (response.status === 201) {
-        set(state => ({ reminders: [...state.reminders, response.data] }));
+        set(state => ({ tasks: [...state.tasks, response.data] })); // Renamed from reminders
         return response.data;
       }
       return null;
     } catch (error) {
-      console.error("Error adding reminder:", error.response ? error.response.data : error.message);
+      console.error("Error adding task:", error.response ? error.response.data : error.message); // Renamed
       return null;
     }
   },
-  deleteReminderStore: async (reminderId) => { // Renamed
+  deleteTaskStore: async (taskId) => { // Renamed from deleteReminderStore, param reminderId to taskId
     const { user } = get();
-    if (!user) { console.error("User not authenticated for deleteReminder"); return; }
+    if (!user) { console.error("User not authenticated for deleteTask"); return; } // Renamed
     try {
       const idToken = await firebase.auth().currentUser.getIdToken();
       const headers = { Authorization: `Bearer ${idToken}` };
-      await axios.delete(`${API_BASE_URL}/deleteReminder/${reminderId}`, { headers });
-      set(state => ({ reminders: state.reminders.filter(r => r.id !== reminderId) }));
+      await axios.delete(`${API_BASE_URL}/deleteTask/${taskId}`, { headers }); // Renamed endpoint and param
+      set(state => ({ tasks: state.tasks.filter(t => t.id !== taskId) })); // Renamed from reminders, r to t
     } catch (error) {
-      console.error("Error deleting reminder:", error.response ? error.response.data : error.message);
+      console.error("Error deleting task:", error.response ? error.response.data : error.message); // Renamed
     }
   },
 
   // --- Appointment Actions ---
-  addAppointmentStore: async (appointmentData) => { // Renamed
+  addAppointmentStore: async (appointmentData) => {
     const { user } = get();
     if (!user) { console.error("User not authenticated for addAppointment"); return null; }
     try {
       const idToken = await firebase.auth().currentUser.getIdToken();
       const headers = { Authorization: `Bearer ${idToken}` };
+      // Ensure appointmentData matches backend schema:
+      // { title, description, startTime, endTime, location, category }
       const response = await axios.post(`${API_BASE_URL}/addAppointment`, appointmentData, { headers });
       if (response.status === 201) {
         set(state => ({ appointments: [...state.appointments, response.data] }));

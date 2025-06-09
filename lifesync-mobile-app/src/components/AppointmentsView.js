@@ -13,7 +13,11 @@ const AppointmentsView = ({ styles }) => { // Removed props now coming from stor
     <View style={styles.viewContainer}>
       <View style={styles.viewHeader}>
         <Text style={styles.viewTitle}>Mes Rendez-vous</Text>
-        <TouchableOpacity style={styles.primaryButton} onPress={() => { /* Call createNewAppointment action here */ }}>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={() => { /* Call createNewAppointment action here */ }}
+          accessibilityRole="button"
+        >
           <Plus size={16} color="white" />
           <Text style={styles.primaryButtonText}>Nouveau RDV</Text>
         </TouchableOpacity>
@@ -23,7 +27,12 @@ const AppointmentsView = ({ styles }) => { // Removed props now coming from stor
         <Text style={styles.infoCardTitle}>Prise de RDV avec contacts</Text>
         <View style={styles.gridTwoCols}>
           {friends.slice(0, 4).map((friend) => (
-            <TouchableOpacity key={friend.id} style={styles.contactCard}>
+            <TouchableOpacity
+              key={friend.id}
+              style={styles.contactCard}
+              accessibilityLabel={`Plan new appointment with ${friend.name}`}
+              accessibilityRole="button"
+            >
               <Text style={styles.contactAvatar}>{friend.avatar}</Text>
               <View>
                 <Text style={styles.contactName}>{friend.name}</Text>
@@ -56,9 +65,24 @@ const AppointmentsView = ({ styles }) => { // Removed props now coming from stor
                 </Text>
               </View>
               <View style={styles.listItemActions}>
-                <TouchableOpacity><Phone size={16} color="#9CA3AF" /></TouchableOpacity>
-                <TouchableOpacity><Video size={16} color="#9CA3AF" /></TouchableOpacity>
-                <TouchableOpacity><Edit3 size={16} color="#9CA3AF" /></TouchableOpacity>
+                <TouchableOpacity
+                  accessibilityLabel={`Call regarding appointment ${appointment.title}`}
+                  accessibilityRole="button"
+                >
+                  <Phone size={16} color="#9CA3AF" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  accessibilityLabel={`Video call regarding appointment ${appointment.title}`}
+                  accessibilityRole="button"
+                >
+                  <Video size={16} color="#9CA3AF" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  accessibilityLabel={`Edit appointment ${appointment.title}`}
+                  accessibilityRole="button"
+                >
+                  <Edit3 size={16} color="#9CA3AF" />
+                </TouchableOpacity>
               </View>
             </View>
           </View>
