@@ -15,12 +15,14 @@ const CommunityView = ({ styles }) => { // Removed props now coming from store
     <View style={styles.viewContainer}>
       <View style={styles.viewHeader}>
         <Text style={styles.viewTitle}>Communauté</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.iconButton}><UsersIcon size={20} color="#4B5563" /></TouchableOpacity>
-          <TouchableOpacity style={[styles.iconButton, {backgroundColor: '#3B82F6'}]}><Plus size={20} color="white" /></TouchableOpacity>
+        <View style={styles.headerActions} // Assuming headerActions is a flex row container
+        >
+          <TouchableOpacity style={styles.iconButton}><UsersIcon size={20} color={styles.colors.textSecondary} /></TouchableOpacity>
+          <TouchableOpacity style={[styles.iconButton, {backgroundColor: styles.colors.primary}]}><Plus size={20} color={styles.colors.textOnPrimary} /></TouchableOpacity>
         </View>
       </View>
 
+      {/* TabsContainer, tabItem, tabItemActive, tabText, tabTextActive are already themed from global styles */}
       <View style={styles.tabsContainer}>
         {['amis', 'templates', 'groupes'].map((tab) => (
           <TouchableOpacity
@@ -52,8 +54,8 @@ const CommunityView = ({ styles }) => { // Removed props now coming from store
                   </View>
                 </View>
                 <View style={styles.friendActions}>
-                  <TouchableOpacity style={[styles.actionButton, {backgroundColor: '#3B82F6'}]}><MessageCircle size={16} color="white" /></TouchableOpacity>
-                  <TouchableOpacity style={[styles.actionButton, {backgroundColor: '#10B981'}]}><Calendar size={16} color="white" /></TouchableOpacity>
+                  <TouchableOpacity style={[styles.actionButton, {backgroundColor: styles.colors.primary}]}><MessageCircle size={16} color={styles.colors.textOnPrimary} /></TouchableOpacity>
+                  <TouchableOpacity style={[styles.actionButton, {backgroundColor: styles.colors.success}]}><Calendar size={16} color={styles.colors.textOnPrimary} /></TouchableOpacity>
                 </View>
               </View>
             ))}
@@ -66,6 +68,7 @@ const CommunityView = ({ styles }) => { // Removed props now coming from store
                 <View style={styles.friendInfo}>
                    <View style={styles.avatarContainer}>
                     <Text style={styles.avatarLg}>{friend.avatar}</Text>
+                    {/* statusOnline, statusBusy, statusOffline are already themed */}
                     <View style={[styles.statusIndicator, 
                       friend.status === 'online' ? styles.statusOnline : 
                       friend.status === 'busy' ? styles.statusBusy : styles.statusOffline
@@ -77,8 +80,8 @@ const CommunityView = ({ styles }) => { // Removed props now coming from store
                   </View>
                 </View>
                 <View style={styles.friendActions}>
-                  <TouchableOpacity><MessageCircle size={16} color="#9CA3AF" /></TouchableOpacity>
-                  <TouchableOpacity><Calendar size={16} color="#9CA3AF" /></TouchableOpacity>
+                  <TouchableOpacity><MessageCircle size={16} color={styles.colors.textLight} /></TouchableOpacity>
+                  <TouchableOpacity><Calendar size={16} color={styles.colors.textLight} /></TouchableOpacity>
                 </View>
               </View>
             ))}
@@ -98,21 +101,26 @@ const CommunityView = ({ styles }) => { // Removed props now coming from store
                     <View style={styles.templateTitleContainer}>
                       <Text style={styles.templateTitle}>{template.title}</Text>
                       {template.premium && (
+                        // premiumBadge is amber500/warning, premiumBadgeText is white/textOnPrimary by default
                         <View style={styles.premiumBadge}>
-                          <Crown size={12} color="white" />
+                          <Crown size={12} color={styles.colors.textOnPrimary} />
                           <Text style={styles.premiumBadgeText}>Premium</Text>
                         </View>
                       )}
                     </View>
                     <Text style={styles.templateAuthor}>par {template.author}</Text>
                     <View style={styles.templateMetaRow}>
-                      <Text style={styles.templateMeta}><Download size={16} color="#6B7280"/> {template.downloads}</Text>
-                      <Text style={styles.templateMeta}><Star size={16} color="#F59E0B"/> {template.rating}</Text>
+                      {/* templateMeta color is slate500/textLight by default */}
+                      <Text style={styles.templateMeta}><Download size={16} color={styles.colors.textLight}/> {template.downloads}</Text>
+                      <Text style={styles.templateMeta}><Star size={16} color={styles.colors.warning}/> {template.rating}</Text>
+                      {/* categoryBadgeSmall is primaryBg/primary color by default */}
                       <Text style={[styles.badge, styles.categoryBadgeSmall]}>{profileTemplates[template.profile]?.name}</Text>
                     </View>
                   </View>
                   <View style={styles.templateActions}>
-                    <TouchableOpacity style={styles.iconButtonSmall}><Share2 size={16} color="#4B5563" /></TouchableOpacity>
+                    {/* iconButtonSmall bg is slate100, assuming icon color should be textSecondary */}
+                    <TouchableOpacity style={styles.iconButtonSmall}><Share2 size={16} color={styles.colors.textSecondary} /></TouchableOpacity>
+                    {/* premiumButtonSmall bg is amber500/warning, primaryButtonSmall is primary */}
                     <TouchableOpacity style={template.premium ? styles.premiumButtonSmall : styles.primaryButtonSmall}>
                       <Text style={styles.primaryButtonSmallText}>{template.premium ? 'Premium' : 'Télécharger'}</Text>
                     </TouchableOpacity>
@@ -125,7 +133,8 @@ const CommunityView = ({ styles }) => { // Removed props now coming from store
            <View style={styles.card}>
             <Text style={styles.cardTitle}>Mes templates partagés</Text>
             <View style={styles.emptyStateContainer}>
-              <Share2 size={48} color="#D1D5DB" />
+              {/* emptyStateContainer icon color is slate300/textDisabled by default */}
+              <Share2 size={48} color={styles.colors.textDisabled} />
               <Text style={styles.emptyStateText}>Vous n'avez pas encore partagé de templates</Text>
               <TouchableOpacity style={styles.primaryButton}>
                 <Text style={styles.primaryButtonText}>Partager ma routine</Text>
@@ -141,14 +150,20 @@ const CommunityView = ({ styles }) => { // Removed props now coming from store
             <Text style={styles.cardTitle}>Groupes par profil</Text>
             <View style={styles.gridTwoCols}>
               {Object.entries(profileTemplates).map(([key, profile]) => {
-                const ProfileIcon = profile.icon; // Icon component from profileTemplates
+                const ProfileIcon = profile.icon;
+                const iconContainerBg = profile.color || styles.colors.textLight;
+                let iconColorToUse = profile.iconColor || styles.colors.textOnPrimary;
+                if (!profile.iconColor && iconContainerBg === styles.colors.textLight) {
+                  iconColorToUse = styles.colors.text;
+                }
                 return (
                   <View key={key} style={styles.groupProfileCard}>
-                    <View style={[styles.groupProfileIconContainer, {backgroundColor: profile.color || '#CCCCCC'}]}>
-                      { ProfileIcon && <ProfileIcon size={24} color={profile.iconColor || "#FFFFFF"} /> }
+                    <View style={[styles.groupProfileIconContainer, {backgroundColor: iconContainerBg}]}>
+                      { ProfileIcon && <ProfileIcon size={24} color={iconColorToUse} /> }
                     </View>
                     <Text style={styles.groupProfileName}>{profile.name}</Text>
                     <Text style={styles.groupProfileMembers}>{Math.floor(Math.random() * 500) + 100} membres</Text>
+                    {/* secondaryButton is already themed */}
                     <TouchableOpacity style={styles.secondaryButton}>
                       <Text style={styles.secondaryButtonText}>Rejoindre</Text>
                     </TouchableOpacity>
@@ -170,6 +185,8 @@ const CommunityView = ({ styles }) => { // Removed props now coming from store
                   <Text style={styles.interestGroupName}>{group.name}</Text>
                   <Text style={styles.interestGroupMeta}>{group.members} membres • {group.category}</Text>
                 </View>
+                {/* memberButton bg is emerald500/success, memberButtonText is white/textOnPrimary by default */}
+                {/* primaryButtonSmall bg is primary, primaryButtonSmallText is white/textOnPrimary by default */}
                 <TouchableOpacity style={group.active ? styles.memberButton : styles.primaryButtonSmall}>
                   <Text style={group.active ? styles.memberButtonText : styles.primaryButtonSmallText}>
                     {group.active ? 'Membre' : 'Rejoindre'}

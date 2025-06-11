@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity } from 'react-native'; // Removed Button
 import useStore from '../store';
 
-const RegistrationScreen = ({ navigation }) => {
+const RegistrationScreen = ({ navigation, styles: globalStyles }) => { // Added styles: globalStyles
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -51,6 +51,7 @@ const RegistrationScreen = ({ navigation }) => {
         value={name}
         onChangeText={setName}
         autoCapitalize="words"
+        placeholderTextColor={globalStyles.colors.textLight}
       />
       <TextInput
         style={styles.input}
@@ -59,6 +60,7 @@ const RegistrationScreen = ({ navigation }) => {
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
+        placeholderTextColor={globalStyles.colors.textLight}
       />
       <TextInput
         style={styles.input}
@@ -66,48 +68,70 @@ const RegistrationScreen = ({ navigation }) => {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        placeholderTextColor={globalStyles.colors.textLight}
       />
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Register</Text>
+      <TouchableOpacity style={[globalStyles.primaryButton, styles.button]} onPress={handleRegister}>
+        <Text style={globalStyles.primaryButtonText}>Register</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={[styles.button, styles.buttonOutline]} onPress={handleGoToLogin}>
-        <Text style={[styles.buttonText, styles.buttonOutlineText]}>Back to Login</Text>
+      <TouchableOpacity style={[globalStyles.primaryButton, styles.button, styles.buttonOutline]} onPress={handleGoToLogin}>
+        <Text style={[globalStyles.primaryButtonText, styles.buttonOutlineText]}>Back to Login</Text>
       </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#f0f4f8' },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#333', marginBottom: 24, textAlign: 'center' },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 15,
-    marginBottom: 16,
-    borderRadius: 8,
-    fontSize: 16,
+  // Ensure these local styles are defined *after* globalStyles is available if they need to reference it.
+  // It's better to pass globalStyles and use it directly in the StyleSheet.create call.
+  // The structure here assumes RegistrationScreen receives globalStyles prop and uses it.
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: globalStyles.spacing.lg, // Adjusted from 20, use lg for 24
+    backgroundColor: globalStyles.colors.background, // '#f0f4f8' is slate50
   },
+  title: { // This could potentially use globalStyles.h2 or h3
+    fontSize: globalStyles.textSizes.xxxl, // Adjusted from 28, use xxxl for 30
+    fontWeight: globalStyles.fontWeights.bold,
+    color: globalStyles.colors.text, // '#333' is close to slate700/800, using general text
+    marginBottom: globalStyles.spacing.lg, // Adjusted from 24
+    textAlign: 'center',
+  },
+  input: {
+    backgroundColor: globalStyles.colors.surface,
+    borderWidth: 1,
+    borderColor: globalStyles.colors.border,
+    padding: globalStyles.spacing.md, // Adjusted from 15
+    marginBottom: globalStyles.spacing.md, // Adjusted from 16
+    borderRadius: 8, // Consider globalStyles.spacing.xs or similar if applicable for radii
+    fontSize: globalStyles.textSizes.md, // Adjusted from 16
+    color: globalStyles.colors.text,
+  },
+  // For button, leverage globalStyles.primaryButton and .primaryButtonText
+  // This local style will be merged and can override or add specifics
   button: {
-    backgroundColor: '#4F46E5', // Indigo
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 10,
+    // backgroundColor: globalStyles.colors.primary, // From globalStyles.primaryButton
+    // padding: globalStyles.spacing.md, // From globalStyles.primaryButton (approx 15)
+    // borderRadius: 8, // From globalStyles.primaryButton (approx 10)
+    alignItems: 'center', // From globalStyles.primaryButton
+    marginBottom: globalStyles.spacing.sm, // Adjusted from 10
+    width: '100%', // Ensure buttons take full width like LoginScreen
   },
   buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+    // color: globalStyles.colors.textOnPrimary, // From globalStyles.primaryButtonText
+    // fontWeight: globalStyles.fontWeights.semibold, // From globalStyles.primaryButtonText
+    // fontSize: globalStyles.textSizes.md, // From globalStyles.primaryButtonText (approx 16)
   },
+  // For buttonOutline, create a style that mirrors secondaryButton or a new global style if needed
   buttonOutline: {
-    backgroundColor: 'transparent',
+    backgroundColor: 'transparent', // Or globalStyles.colors.surface
     borderWidth: 1,
-    borderColor: '#4F46E5',
+    borderColor: globalStyles.colors.primary, // Use primary color for outline
   },
   buttonOutlineText: {
-    color: '#4F46E5',
+    color: globalStyles.colors.primary, // Text color matches border
+    // fontWeight: globalStyles.fontWeights.semibold, // Consistent weight
+    // fontSize: globalStyles.textSizes.md, // Consistent size
   }
 });
 

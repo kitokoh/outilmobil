@@ -10,11 +10,22 @@ const ProfileSelector = ({ styles }) => { // Removed props now coming from store
 
   return (
     <View style={styles.viewContainer}>
-      <Text style={styles.viewTitle}>Choisir votre profil</Text>
-      <Text style={styles.viewSubtitle}>Sélectionnez le profil qui correspond le mieux à votre mode de vie pour obtenir des routines personnalisées.</Text>
+      <Text style={[styles.viewTitle, {color: styles.colors.text}]}>Choisir votre profil</Text>
+      <Text style={[styles.viewSubtitle, {color: styles.colors.textSecondary}]}>Sélectionnez le profil qui correspond le mieux à votre mode de vie pour obtenir des routines personnalisées.</Text>
       <ScrollView style={styles.profileSelectorGrid}>
         {Object.entries(profileTemplates).map(([key, profile]) => {
           const ProfileIcon = profile.icon; // Icon component from profileTemplates
+          // Determine icon color: use profile.iconColor if provided, otherwise default to textOnPrimary if background is a theme color, or fallback.
+          const iconContainerBg = profile.color || styles.colors.textLight; // Fallback to a neutral theme color
+          let iconColorToUse = profile.iconColor || styles.colors.textOnPrimary; // Default for themed backgrounds
+          // If profile.color is not a theme color that implies textOnPrimary, adjust iconColor if needed.
+          // This logic might need more sophisticated mapping if profile.color can be arbitrary.
+          // For now, assuming profile.color, if set, is a color that works with textOnPrimary.
+          if (!profile.iconColor && iconContainerBg === styles.colors.textLight) {
+            iconColorToUse = styles.colors.text; // Example: if bg is light gray, use dark text for icon
+          }
+
+
           return (
           <TouchableOpacity
             key={key}
@@ -25,8 +36,8 @@ const ProfileSelector = ({ styles }) => { // Removed props now coming from store
             style={[styles.profileCard, userProfile === key && styles.profileCardActive]}
           >
             <View style={styles.profileCardContent}>
-              <View style={[styles.profileIconContainer, { backgroundColor: profile.color || '#CCCCCC' }]}>
-                 { ProfileIcon && <ProfileIcon size={36} color={profile.iconColor || "#FFFFFF"} /> }
+              <View style={[styles.profileIconContainer, { backgroundColor: iconContainerBg }]}>
+                 { ProfileIcon && <ProfileIcon size={36} color={iconColorToUse} /> }
               </View>
               <View style={styles.profileInfo}>
                 <Text style={styles.profileName}>{profile.name}</Text>
@@ -38,11 +49,13 @@ const ProfileSelector = ({ styles }) => { // Removed props now coming from store
                 </Text>
                 <View style={styles.profileRoutinesPreview}>
                   {profile.routines.slice(0, 3).map((routine, idx) => (
+                    // Using categoryBadge (which implies primaryBg and primary color)
+                    // Consider if these badges should have unique colors per category or profile type
                     <Text key={idx} style={[styles.badge, styles.categoryBadgeSmall]}>
                       {routine.category}
                     </Text>
                   ))}
-                  {profile.routines.length > 3 && <Text style={styles.profileRoutinesMore}>+{profile.routines.length - 3} autres</Text>}
+                  {profile.routines.length > 3 && <Text style={[styles.profileRoutinesMore, {color: styles.colors.textLight}]}>+{profile.routines.length - 3} autres</Text>}
                 </View>
               </View>
             </View>

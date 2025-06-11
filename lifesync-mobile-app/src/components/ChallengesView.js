@@ -14,14 +14,15 @@ const ChallengesView = ({ styles }) => { // Removed props now coming from store
     <View style={styles.viewContainer}>
       <View style={styles.viewHeader}>
         <Text style={styles.viewTitle}>Défis & Communauté</Text>
-        <TouchableOpacity style={[styles.primaryButton, {backgroundColor: '#F59E0B'}]} onPress={() => { /* Call createChallenge action */ }}>
-          <Plus size={16} color="white" />
+        {/* Create Challenge button using accent color */}
+        <TouchableOpacity style={[styles.primaryButton, {backgroundColor: styles.colors.accent}]} onPress={() => { /* Call createChallenge action */ }}>
+          <Plus size={16} color={styles.colors.textOnPrimary} />
           <Text style={styles.primaryButtonText}>Créer Défi</Text>
         </TouchableOpacity>
       </View>
       <ScrollView>
       <View style={styles.card}>
-        <View style={styles.cardHeaderIconWrapper}><Trophy size={20} color="#F59E0B" /><Text style={styles.cardTitle}> Mes défis actifs ({challenges.filter(c => c.joined).length})</Text></View>
+        <View style={styles.cardHeaderIconWrapper}><Trophy size={20} color={styles.colors.warning} /><Text style={styles.cardTitle}> Mes défis actifs ({challenges.filter(c => c.joined).length})</Text></View>
         <View style={styles.listContainerNoGap}>
           {challenges.filter(c => c.joined).map((challenge) => (
             <View key={challenge.id} style={styles.challengeItem}>
@@ -31,26 +32,34 @@ const ChallengesView = ({ styles }) => { // Removed props now coming from store
                   <Text style={styles.challengeParticipants}>{challenge.participants} participants</Text>
                 </View>
                 <View style={styles.challengeTiming}>
+                  {/* challengeDaysLeft color is amber500/warning by default from global styles */}
                   <Text style={styles.challengeDaysLeft}>{challenge.daysLeft} jours restants</Text>
+                  {/* challengeReward color is slate500/textLight by default */}
                   <Text style={styles.challengeReward}>{challenge.reward}</Text>
                 </View>
               </View>
               <View style={styles.challengeProgressContainer}>
                 <View style={styles.challengeProgressTextContainer}>
-                  <Text style={styles.challengeProgressLabel}>Progression</Text>
+                  {/* challengeProgressLabel color is slate700, consider textSecondary */}
+                  <Text style={[styles.challengeProgressLabel, {color: styles.colors.textSecondary}]}>Progression</Text>
+                  {/* challengeProgressPercent color is slate900/text by default */}
                   <Text style={styles.challengeProgressPercent}>{challenge.progress}%</Text>
                 </View>
+                {/* challengeProgressBarBackground is slate200/border, challengeProgressBar is amber500/warning by default */}
                 <View style={styles.challengeProgressBarBackground}>
                   <View style={[styles.challengeProgressBar, { width: `${challenge.progress}%` }]}></View>
                 </View>
               </View>
               <View style={styles.challengeFooter}>
                 <View style={styles.avatarGroup}>
+                  {/* avatarSmall bg is indigo600/primary, avatarText is white/textOnPrimary by default */}
+                  {/* avatarSmallMore bg is slate500/textSecondary, avatarText is white/textOnPrimary by default */}
                   {friends.slice(0, 3).map((friend, idx) => (
                     <View key={idx} style={styles.avatarSmall}><Text style={styles.avatarText}>{friend.name[0]}</Text></View>
                   ))}
                   {challenge.participants > 3 && <View style={styles.avatarSmallMore}><Text style={styles.avatarText}>+{challenge.participants - 3}</Text></View>}
                 </View>
+                {/* linkText color is indigo600/primary by default */}
                 <TouchableOpacity><Text style={styles.linkText}>Voir détails</Text></TouchableOpacity>
               </View>
             </View>
@@ -60,7 +69,8 @@ const ChallengesView = ({ styles }) => { // Removed props now coming from store
       </View>
 
       <View style={styles.card}>
-        <View style={styles.cardHeaderIconWrapper}><Sparkles size={20} color="#8B5CF6" /><Text style={styles.cardTitle}> Défis recommandés pour vous</Text></View>
+        {/* Assuming pink600 is available via ...oldColors spread for Sparkles icon */}
+        <View style={styles.cardHeaderIconWrapper}><Sparkles size={20} color={styles.colors.pink600 || styles.colors.secondary} /><Text style={styles.cardTitle}> Défis recommandés pour vous</Text></View>
         <View style={styles.listContainerNoGap}>
           {challenges.filter(c => !c.joined).map((challenge) => (
             <View key={challenge.id} style={styles.challengeItem}>
@@ -69,11 +79,13 @@ const ChallengesView = ({ styles }) => { // Removed props now coming from store
                   <Text style={styles.challengeTitle}>{challenge.title}</Text>
                   <Text style={styles.challengeParticipants}>{challenge.participants} participants actifs</Text>
                 </View>
+                {/* joinChallengeButton bg is sky500/secondary, text is white/textOnSecondary by default */}
                 <TouchableOpacity style={styles.joinChallengeButton} onPress={() => { /* Call joinChallenge action with challenge.id */ }}>
                   <Text style={styles.joinChallengeButtonText}>Rejoindre</Text>
                 </TouchableOpacity>
               </View>
               <View style={styles.challengeDetails}>
+                {/* challengeDetailText color is slate600/textSecondary by default */}
                 <Text style={styles.challengeDetailText}>🏆 {challenge.reward}</Text>
                 <Text style={styles.challengeDetailText}>⏱️ {challenge.daysLeft} jours</Text>
                 <Text style={styles.challengeDetailText}>📈 {challenge.progress}% réussite moyenne</Text>
