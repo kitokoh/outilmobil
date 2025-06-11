@@ -2,34 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { SafeAreaView, View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Button } from 'react-native';
 import { Bell, User, Calendar, Home, Plus, Settings, Users as UsersIcon, Brain, LogOut } from 'lucide-react-native'; // Added LogOut icon
 
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
-import 'firebase/compat/firestore'; // If using Firestore directly on client
-import {
-  REACT_APP_FIREBASE_API_KEY,
-  REACT_APP_FIREBASE_AUTH_DOMAIN,
-  REACT_APP_FIREBASE_PROJECT_ID,
-  REACT_APP_FIREBASE_STORAGE_BUCKET,
-  REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  REACT_APP_FIREBASE_APP_ID
-} from '@env';
-
-const firebaseConfig = {
-  apiKey: REACT_APP_FIREBASE_API_KEY,
-  authDomain: REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: REACT_APP_FIREBASE_APP_ID,
-};
-
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-  console.log("Firebase initialized successfully!");
-} else {
-  firebase.app(); // if already initialized, use that one
-  console.log("Firebase already initialized.");
-}
+// Firebase is initialized in store.js
+// No need for direct Firebase imports or initialization here if store handles it.
 
 // Import components
 import Dashboard from './components/Dashboard';

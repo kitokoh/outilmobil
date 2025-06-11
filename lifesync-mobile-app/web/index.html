@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>LifeSync App</title>
+  <style>
+    /* Basic styles to prevent blank screen before JS loads */
+    #root {
+      display: flex;
+      flex: 1;
+      height: 100vh; /* Full viewport height */
+    }
+    /* Ensure body takes up full height as well */
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+  </style>
+</head>
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+  <!-- Bundled JS will be injected here by Webpack -->
+</body>
+</html>
