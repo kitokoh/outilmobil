@@ -7,16 +7,19 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  Image
+  Image,
+  Switch,
 } from 'react-native';
-import { User, LogOut, Save, Image as ImageIcon, Edit3 } from 'lucide-react-native';
+import { User, LogOut, Save, Image as ImageIcon, Edit3, Moon } from 'lucide-react-native';
 import useStore from '../store';
 
-const SettingsScreen = ({ styles: globalStyles }) => { // Accept globalStyles
+const SettingsScreen = ({ styles: globalStyles }) => {
   const user = useStore(state => state.user);
   const detailedUserProfile = useStore(state => state.detailedUserProfile);
   const updateUserProfile = useStore(state => state.updateUserProfile);
   const logout = useStore(state => state.logout);
+  const isDarkMode = useStore(state => state.isDarkMode);
+  const toggleDarkMode = useStore(state => state.toggleDarkMode);
 
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
@@ -28,10 +31,9 @@ const SettingsScreen = ({ styles: globalStyles }) => { // Accept globalStyles
       setBio(detailedUserProfile.bio || '');
       setAvatarUrl(detailedUserProfile.avatarUrl || '');
     } else if (user) {
-      // Fallback if detailedUserProfile is not yet loaded or doesn't exist
       setName(user.displayName || user.email || '');
-      setBio(''); // No bio in basic user object
-      setAvatarUrl(''); // No avatarUrl in basic user object
+      setBio('');
+      setAvatarUrl('');
     }
   }, [detailedUserProfile, user]);
 
@@ -50,38 +52,48 @@ const SettingsScreen = ({ styles: globalStyles }) => { // Accept globalStyles
       "Logout",
       "Are you sure you want to logout?",
       [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "OK",
-          onPress: () => logout()
-        }
+        { text: "Cancel", style: "cancel" },
+        { text: "OK", onPress: () => logout() },
       ]
     );
   };
 
+  const localStyles = getSettingsStyles(globalStyles);
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <View style={styles.header}>
+    <ScrollView style={localStyles.container} contentContainerStyle={localStyles.contentContainer}>
+      <View style={localStyles.header}>
         <User size={24} color={globalStyles.colors.textSecondary} />
-        <Text style={styles.headerTitle}>Profile Settings</Text>
+        <Text style={localStyles.headerTitle}>Profile Settings</Text>
+      </View>
+
+      {/* Dark Mode Toggle */}
+      <View style={localStyles.settingRow}>
+        <View style={localStyles.settingRowLeft}>
+          <Moon size={20} color={globalStyles.colors.textSecondary} />
+          <Text style={localStyles.settingLabel}>Dark Mode</Text>
+        </View>
+        <Switch
+          value={isDarkMode}
+          onValueChange={toggleDarkMode}
+          trackColor={{ false: globalStyles.colors.border, true: globalStyles.colors.primaryLight }}
+          thumbColor={isDarkMode ? globalStyles.colors.primary : globalStyles.colors.slate200}
+        />
       </View>
 
       {user && (
-        <View style={styles.emailContainer}>
-          <Text style={styles.label}>Email</Text>
-          <Text style={styles.emailText}>{user.email}</Text>
+        <View style={localStyles.emailContainer}>
+          <Text style={localStyles.label}>Email</Text>
+          <Text style={localStyles.emailText}>{user.email}</Text>
         </View>
       )}
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Name</Text>
-        <View style={styles.inputContainer}>
-          <Edit3 size={20} color={globalStyles.colors.textLight} style={styles.inputIcon} />
+      <View style={localStyles.inputGroup}>
+        <Text style={localStyles.label}>Name</Text>
+        <View style={localStyles.inputContainer}>
+          <Edit3 size={20} color={globalStyles.colors.textLight} style={localStyles.inputIcon} />
           <TextInput
-            style={styles.input}
+            style={localStyles.input}
             value={name}
             onChangeText={setName}
             placeholder="Enter your name"
@@ -91,12 +103,12 @@ const SettingsScreen = ({ styles: globalStyles }) => { // Accept globalStyles
         </View>
       </View>
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Bio</Text>
-        <View style={styles.inputContainer}>
-          <Edit3 size={20} color={globalStyles.colors.textLight} style={styles.inputIcon} />
+      <View style={localStyles.inputGroup}>
+        <Text style={localStyles.label}>Bio</Text>
+        <View style={localStyles.inputContainer}>
+          <Edit3 size={20} color={globalStyles.colors.textLight} style={localStyles.inputIcon} />
           <TextInput
-            style={[styles.input, styles.textArea]}
+            style={[localStyles.input, localStyles.textArea]}
             value={bio}
             onChangeText={setBio}
             placeholder="Tell us about yourself"
@@ -107,12 +119,12 @@ const SettingsScreen = ({ styles: globalStyles }) => { // Accept globalStyles
         </View>
       </View>
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Avatar URL</Text>
-        <View style={styles.inputContainer}>
-          <ImageIcon size={20} color={globalStyles.colors.textLight} style={styles.inputIcon} />
+      <View style={localStyles.inputGroup}>
+        <Text style={localStyles.label}>Avatar URL</Text>
+        <View style={localStyles.inputContainer}>
+          <ImageIcon size={20} color={globalStyles.colors.textLight} style={localStyles.inputIcon} />
           <TextInput
-            style={styles.input}
+            style={localStyles.input}
             value={avatarUrl}
             onChangeText={setAvatarUrl}
             placeholder="Enter image URL for your avatar"
@@ -121,62 +133,78 @@ const SettingsScreen = ({ styles: globalStyles }) => { // Accept globalStyles
           />
         </View>
         {avatarUrl ? (
-          <Image source={{ uri: avatarUrl }} style={styles.avatarPreview} onError={(e) => console.log("Failed to load avatar preview", e.nativeEvent.error)} />
+          <Image source={{ uri: avatarUrl }} style={localStyles.avatarPreview} onError={(e) => console.log("Failed to load avatar preview", e.nativeEvent.error)} />
         ) : (
-          <View style={styles.avatarPlaceholder}>
+          <View style={localStyles.avatarPlaceholder}>
             <ImageIcon size={40} color={globalStyles.colors.textDisabled} />
           </View>
         )}
       </View>
 
       <TouchableOpacity
-        style={[globalStyles.primaryButton, styles.button]}
+        style={[globalStyles.primaryButton, localStyles.button]}
         onPress={handleSaveProfile}
       >
-        <Save size={20} color={globalStyles.colors.textOnPrimary}
-          // style={globalStyles.primaryButton.iconStyle} // Assuming primaryButton has iconStyle for margin if needed
-        />
+        <Save size={20} color={globalStyles.colors.textOnPrimary} />
         <Text style={globalStyles.primaryButtonText}>Save Profile</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[globalStyles.primaryButton, styles.button, styles.logoutButton]}
+        style={[globalStyles.primaryButton, localStyles.button, localStyles.logoutButton]}
         onPress={handleLogout}
       >
-        <LogOut size={20} color={globalStyles.colors.textOnPrimary}
-          // style={globalStyles.primaryButton.iconStyle}
-        />
+        <LogOut size={20} color={globalStyles.colors.textOnPrimary} />
         <Text style={globalStyles.primaryButtonText}>Logout</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 };
 
-const styles = StyleSheet.create({
+const getSettingsStyles = (globalStyles) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: globalStyles.colors.background,
   },
   contentContainer: {
-    padding: globalStyles.spacing.lg, // 20 -> lg (24) or md (16) can be chosen
+    padding: globalStyles.spacing.lg,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: globalStyles.spacing.lg, // 25 -> lg (24)
+    marginBottom: globalStyles.spacing.lg,
   },
   headerTitle: {
-    fontSize: globalStyles.textSizes.xxl, // 22 -> xxl (24)
+    fontSize: globalStyles.textSizes.xxl,
     fontWeight: globalStyles.fontWeights.bold,
-    marginLeft: globalStyles.spacing.sm, // 10 -> sm (12)
-    color: globalStyles.colors.text, // #333 -> text
+    marginLeft: globalStyles.spacing.sm,
+    color: globalStyles.colors.text,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: globalStyles.colors.surface,
+    borderRadius: 12,
+    padding: globalStyles.spacing.md,
+    marginBottom: globalStyles.spacing.lg,
+    borderWidth: 1,
+    borderColor: globalStyles.colors.border,
+  },
+  settingRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: globalStyles.spacing.sm,
+  },
+  settingLabel: {
+    fontSize: globalStyles.textSizes.md,
+    fontWeight: globalStyles.fontWeights.medium,
+    color: globalStyles.colors.text,
   },
   emailContainer: {
-    marginBottom: globalStyles.spacing.lg, // 20 -> lg
-    padding: globalStyles.spacing.md, // 15 -> md (16)
-    backgroundColor: globalStyles.colors.surface, // #FFFFFF -> surface
-    borderRadius: 8, // Consider globalStyles.spacing value for radius
-    // Use global card shadow or remove if not standard
+    marginBottom: globalStyles.spacing.lg,
+    padding: globalStyles.spacing.md,
+    backgroundColor: globalStyles.colors.surface,
+    borderRadius: 8,
     shadowColor: globalStyles.colors.text,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -184,26 +212,25 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   label: {
-    fontSize: globalStyles.textSizes.md, // 16 -> md
-    color: globalStyles.colors.textSecondary, // #4A4A4A -> textSecondary
-    marginBottom: globalStyles.spacing.xs, // 8 -> xs
-    fontWeight: globalStyles.fontWeights.medium, // 500 -> medium
+    fontSize: globalStyles.textSizes.md,
+    color: globalStyles.colors.textSecondary,
+    marginBottom: globalStyles.spacing.xs,
+    fontWeight: globalStyles.fontWeights.medium,
   },
   emailText: {
-    fontSize: globalStyles.textSizes.md, // 16 -> md
-    color: globalStyles.colors.text, // #666 -> text or textSecondary
+    fontSize: globalStyles.textSizes.md,
+    color: globalStyles.colors.text,
   },
   inputGroup: {
-    marginBottom: globalStyles.spacing.lg, // 20 -> lg
+    marginBottom: globalStyles.spacing.lg,
   },
-  inputContainer: { // Similar to a card style
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: globalStyles.colors.surface, // #FFFFFF -> surface
+    backgroundColor: globalStyles.colors.surface,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: globalStyles.colors.border, // #E0E0E0 -> border
-    // Optional: use global shadow style for inputs if defined
+    borderColor: globalStyles.colors.border,
     shadowColor: globalStyles.colors.text,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -211,91 +238,45 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   inputIcon: {
-    marginHorizontal: globalStyles.spacing.sm, // 10 -> sm (12)
-    // Color will be set directly in JSX for icons
+    marginHorizontal: globalStyles.spacing.sm,
   },
   input: {
     flex: 1,
-    height: 50, // Keep or make dynamic with padding
-    paddingHorizontal: globalStyles.spacing.sm, // 10 -> sm (12)
-    fontSize: globalStyles.textSizes.md, // 16 -> md
-    color: globalStyles.colors.text, // #333 -> text
+    height: 50,
+    paddingHorizontal: globalStyles.spacing.sm,
+    fontSize: globalStyles.textSizes.md,
+    color: globalStyles.colors.text,
   },
   textArea: {
-    height: 80, // Keep or adjust based on content
+    height: 80,
     textAlignVertical: 'top',
-    paddingTop: globalStyles.spacing.sm, // 10 -> sm (12)
+    paddingTop: globalStyles.spacing.sm,
   },
   avatarPreview: {
     width: 100,
     height: 100,
-    borderRadius: 50, // Standard large radius
-    marginTop: globalStyles.spacing.sm, // 10 -> sm
+    borderRadius: 50,
+    marginTop: globalStyles.spacing.sm,
     alignSelf: 'center',
-    backgroundColor: globalStyles.colors.border, // #E0E0E0 -> border
+    backgroundColor: globalStyles.colors.border,
   },
   avatarPlaceholder: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    marginTop: globalStyles.spacing.sm, // 10 -> sm
+    marginTop: globalStyles.spacing.sm,
     alignSelf: 'center',
-    backgroundColor: globalStyles.colors.slate100 || globalStyles.colors.background, // #E9E9E9
+    backgroundColor: globalStyles.colors.slate100 || globalStyles.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // Save button should use globalStyles.primaryButton
   button: {
-    // Merging with globalStyles.primaryButton which has:
-    // backgroundColor: globalStyles.colors.primary,
-    // paddingVertical: globalStyles.spacing.sm (12) vs 15 here. Overriding paddingVertical for larger touch target.
-    paddingVertical: globalStyles.spacing.md, // Explicitly set larger padding
-    // borderRadius: 10 vs 8 here. globalStyles.primaryButton.borderRadius is 10.
-    // flexDirection, alignItems, justifyContent, gap, shadow... are inherited.
-    // This local style can add marginTop or override specific things if needed.
-    marginTop: globalStyles.spacing.lg, // Adjusted from 15 to lg (24) for more space
-  },
-  // Save button text should use globalStyles.primaryButtonText
-  buttonText: { // This style is now effectively overridden by globalStyles.primaryButtonText
-    // color: globalStyles.colors.textOnPrimary,
-    // fontSize: globalStyles.textSizes.md (16) vs 18 here. Global is md.
-    // fontWeight: globalStyles.fontWeights.semibold (600)
-    // marginLeft: globalStyles.spacing.xs (8) vs 10 here. Global has gap.
-  },
-  buttonIcon: { // This style is not strictly needed if primaryButton's gap is sufficient
-     // globalStyles.primaryButton already handles gap, so specific margin might not be needed
-     // color is set directly on icon component
-  },
-  // Logout button should use globalStyles.error for background or a new semantic name if added
-  logoutButton: {
-    backgroundColor: globalStyles.colors.error, // #D9534F -> error
-    marginTop: globalStyles.spacing.md, // Adjusted from 10 to md (16)
-  },
-});
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#007AFF', // A common blue color
-    paddingVertical: 15,
-    borderRadius: 8,
-    marginTop: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
-    marginLeft: 10,
-  },
-  buttonIcon: {
-    // marginRight: 8, // If icon should be to the left of text
+    paddingVertical: globalStyles.spacing.md,
+    marginTop: globalStyles.spacing.lg,
   },
   logoutButton: {
-    backgroundColor: '#D9534F', // A common red/danger color
-    marginTop: 10,
+    backgroundColor: globalStyles.colors.error,
+    marginTop: globalStyles.spacing.md,
   },
 });
 
