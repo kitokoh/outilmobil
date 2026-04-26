@@ -1,0 +1,101 @@
+import { Appearance } from 'react-native';
+
+const lightColors = {
+  slate50: '#F8FAFC',
+  slate100: '#F1F5F9',
+  slate200: '#E2E8F0',
+  slate300: '#CBD5E1',
+  slate400: '#94A3B8',
+  slate500: '#64748B',
+  slate600: '#475569',
+  slate700: '#334155',
+  slate900: '#0F172A',
+  white: '#FFFFFF',
+  indigo50: '#EEF2FF',
+  indigo100: '#E0E7FF',
+  indigo500: '#6366F1',
+  indigo600: '#4F46E5',
+  sky500: '#0EA5E9',
+  emerald500: '#10B981',
+  amber500: '#F59E0B',
+  red600: '#DC2626',
+  orange600: '#EA580C',
+  pink600: '#DB2777',
+  gray700: '#374151',
+  blue600: '#2563EB',
+
+  primary: '#4F46E5',
+  primaryDark: '#3D37B8',
+  primaryLight: '#6366F1',
+  primaryBg: '#EEF2FF',
+  secondary: '#0EA5E9',
+  accent: '#F59E0B',
+  success: '#10B981',
+  error: '#DC2626',
+  warning: '#F59E0B',
+
+  background: '#F8FAFC',
+  surface: '#FFFFFF',
+  border: '#E2E8F0',
+
+  text: '#0F172A',
+  textSecondary: '#475569',
+  textLight: '#94A3B8',
+  textDisabled: '#CBD5E1',
+  textOnPrimary: '#FFFFFF',
+  textOnSecondary: '#FFFFFF',
+  textOnError: '#FFFFFF',
+};
+
+const darkColors = {
+  slate50: '#0F172A',
+  slate100: '#1E293B',
+  slate200: '#334155',
+  slate300: '#475569',
+  slate400: '#64748B',
+  slate500: '#94A3B8',
+  slate600: '#CBD5E1',
+  slate700: '#E2E8F0',
+  slate900: '#F8FAFC',
+  white: '#1E293B',
+  indigo50: '#1E1B4B',
+  indigo100: '#312E81',
+  indigo500: '#818CF8',
+  indigo600: '#818CF8',
+  sky500: '#38BDF8',
+  emerald500: '#34D399',
+  amber500: '#FBBF24',
+  red600: '#F87171',
+  orange600: '#FB923C',
+  pink600: '#F472B6',
+  gray700: '#D1D5DB',
+  blue600: '#60A5FA',
+
+  primary: '#818CF8',
+  primaryDark: '#6366F1',
+  primaryLight: '#A5B4FC',
+  primaryBg: '#1E1B4B',
+  secondary: '#38BDF8',
+  accent: '#FBBF24',
+  success: '#34D399',
+  error: '#F87171',
+  warning: '#FBBF24',
+
+  background: '#0F172A',
+  surface: '#1E293B',
+  border: '#334155',
+
+  text: '#F1F5F9',
+  textSecondary: '#CBD5E1',
+  textLight: '#94A3B8',
+  textDisabled: '#475569',
+  textOnPrimary: '#0F172A',
+  textOnSecondary: '#0F172A',
+  textOnError: '#0F172A',
+};
+
+export const getColors = (isDark) => isDark ? darkColors : lightColors;
+
+export const getSystemColorScheme = () => Appearance.getColorScheme() === 'dark';
+
+export { lightColors, darkColors };
