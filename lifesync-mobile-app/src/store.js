@@ -47,6 +47,11 @@ const useStore = create((set, get) => ({
   user: null, // Firebase auth user object { email, name (displayName), id (uid) } - primarily Firebase Auth info
   detailedUserProfile: null, // Will store { name, email, bio, avatarUrl, uid, createdAt } from Firestore
 
+  // Theme state
+  isDarkMode: false,
+  toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
+  setDarkMode: (isDark) => set({ isDarkMode: isDark }),
+
   // Original app state variables
   currentView: 'dashboard',
   userProfile: 'student', 
